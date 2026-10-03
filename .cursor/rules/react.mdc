@@ -1,5 +1,5 @@
 ---
-description: Convenções React — shadcn/ui, formulários (React Hook Form + Zod), theming, autenticação nas páginas e Image do Next.js.
+description: Convenções React — shadcn/ui, formulários, theming, regras de múltiplos portais de autenticação nas páginas e Image do Next.js.
 alwaysApply: true
 ---
 
@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Componentes
 
-- Use componentes da biblioteca shadcn/ui o máximo possível ao criar/modificar components (veja https://ui.shadcn.com/ para a lista de componentes disponíveis).
+- Use componentes da biblioteca shadcn/ui o máximo possível ao criar/modificar componentes (veja https://shadcn.com para a lista de componentes disponíveis).
 - Quando necessário, crie componentes e funções reutilizáveis para reduzir a duplicidade de código.
 - **NUNCA** crie mais de um componente no mesmo arquivo. Cada componente deve ter seu próprio arquivo.
 - Antes de criar um novo componente, **SEMPRE** use Context7 para verificar se já existe um componente do shadcn/ui que possa ser utilizado. Caso exista, instale-o.
@@ -16,62 +16,22 @@ alwaysApply: true
 ## Formulários
 
 - **SEMPRE** use Zod para validação de formulários.
-- **SEMPRE** use React Hook Form para criação e validação de formulários. **SEMPRE** use o componente @components/ui/form.tsx para criar formulários.
-
-Exemplo de formulário:
-
-```tsx
-"use client";
-
-import {zodResolver} from "@hookform/resolvers/zod";
-import {useForm} from "react-hook-form";
-import {z} from "zod";
-
-import {Button} from "@/components/ui/button";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
-
-const formSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-});
-
-export function ProfileForm() {
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="username"
-          render={({field}) => (
-            <FormItem>
-              <FormLabel>Username</FormLabel>
-              <FormControl>
-                <Input placeholder="shadcn" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">Submit</Button>
-      </form>
-    </Form>
-  );
-}
-```
+- **SEMPRE** use React Hook Form para criação e validação de formulários. **SEMPRE** use o componente `@/components/ui/form.tsx` para criar formulários.
 
 ## Estilização
 
-- **NUNCA** use cores hard-coded do Tailwind (como `text-white`, `text-white/70`, `bg-black`, `bg-white`, `text-black`, `border-[#f1f1f1]`, `bg-[#2b54ff]`, `bg-[oklch(...)]` etc.). **SEMPRE** use as cores do tema definidas em @app/globals.css (ex: `text-background`, `text-background/70`, `bg-foreground`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `border-border` etc.). Caso a cor necessária não exista no tema, crie uma nova variável CSS em @app/globals.css seguindo o padrão existente.
+- **NUNCA** use cores hard-coded do Tailwind (como `text-white`, `bg-black`, etc.). **SEMPRE** use as cores do tema definidas em `@/app/globals.css` (ex: `text-background`, `bg-primary`, `border-border` etc.). Caso a cor necessária não exista no tema, crie uma nova variável CSS seguindo o padrão existente.
 - Antes de criar uma nova variável de cor, **SEMPRE** busque na documentação do shadcn/ui sobre theming e veja se realmente é necessário.
-- **SEMPRE** veja os componentes que podem ser reutilizados para construção de uma página em @components/ui/page.tsx.
+- **SEMPRE** veja os componentes que podem ser reutilizados para construção de uma página em `@/components/ui/page.tsx`.
 
-## Autenticação
+## Autenticação com FastifyJWT
 
-- **NUNCA** use middleware para verificação de autenticação. **SEMPRE** faça a verificação de sessão na própria página usando `authClient.useSession()`.
-- Páginas protegidas devem redirecionar para `/auth` caso o usuário não esteja logado.
-- A página de login (`/auth`) deve redirecionar para `/` caso o usuário já esteja logado.
+- **NUNCA** use middleware para verificação de autenticação de páginas. **SEMPRE** faça a verificação de sessão diretamente na página (Server Component) lendo o cookie `auth_token`.
+- **Apenas no Servidor:** Para ler a sessão no server-side, recupere o cookie `auth_token`, decodifique o payload do JWT com segurança e valide a propriedade `role` (vinda do enum do Prisma da API).
+- **Portal do Aluno (`/area-aluno`):** Páginas protegidas do aluno devem redirecionar para `/login-aluno` caso o cookie `auth_token` esteja ausente ou o payload decodificado não possua a role `ALUNO` ou `RESPONSAVEL`.
+- **Portal Administrativo (`/area-admin`):** Páginas protegidas do admin devem redirecionar para `/login-admin` caso o cookie esteja ausente ou a role decodificada não seja `ADMIN` ou `PROFESSOR`.
+- **Páginas de Login (`/login-aluno` ou `/login-admin`):** Devem verificar se o cookie existe e é válido para a respectiva role; se sim, devem redirecionar imediatamente para seus respectivos dashboards (`/area-aluno/dashboard` ou `/area-admin/dashboard`).
+- **Validação de Token na API:** Lembre-se de que a segurança real dos dados é feita pela API Fastify. Se o token expirar ou for inválido, os hooks do Orval/TanStack Query lançarão um erro de requisição (401), o qual deve ser tratado para deslogar o usuário limpando o cookie.
 
 ## Imagens
 
