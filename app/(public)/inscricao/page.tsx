@@ -1,42 +1,32 @@
-import {ArrowLeft} from "lucide-react";
-import Link from "next/link";
-
-import {InscricaoForm} from "@/components/public/inscricao-form";
-import {InscricaoSidebar} from "@/components/public/inscricao-sidebar";
-import {Button} from "@/components/ui/button";
+import {InscricaoCatalog} from "@/components/public/inscricao-catalog";
+import {InscricaoSuccess} from "@/components/public/inscricao-success";
+import {getCatalogoCursos} from "@/lib/api/fetch-generated";
 
 interface InscricaoPageProps {
-  searchParams: Promise<{curso?: string}>;
+  searchParams: Promise<{curso?: string; checkout?: string}>;
 }
 
 const InscricaoPage = async ({searchParams}: InscricaoPageProps) => {
   const params = await searchParams;
+  const catalogo = await getCatalogoCursos();
 
   return (
-    <div className="bg-slate-50/50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-4xl space-y-12">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            className="px-0 text-slate-600 hover:bg-transparent hover:text-slate-900"
-            nativeButton={false}
-            render={<Link href="/" />}
-          >
-            <ArrowLeft />
-            Voltar ao portal institucional
-          </Button>
-          <p className="text-xs font-medium tracking-wider text-slate-400 uppercase">
-            Nexa University Admissions
+    <div className="bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl space-y-6">
+        {params.checkout === "cancel" ? (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            O checkout foi cancelado. Escolha o curso novamente quando quiser
+            concluir a matrícula.
           </p>
-        </div>
-        <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-12">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40 md:col-span-7">
-            <InscricaoForm initialCourseId={params.curso} />
-          </div>
-          <div className="md:col-span-5">
-            <InscricaoSidebar />
-          </div>
-        </div>
+        ) : null}
+        {params.checkout === "success" ? (
+          <InscricaoSuccess />
+        ) : (
+          <InscricaoCatalog
+            catalogo={catalogo}
+            initialCourseHint={params.curso}
+          />
+        )}
       </div>
     </div>
   );

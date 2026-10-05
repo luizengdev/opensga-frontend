@@ -5,11 +5,11 @@ export const InscricaoSidebar = () => {
     <aside className="space-y-6">
       <div className="space-y-2">
         <h2 className="font-heading text-lg font-bold text-slate-900">
-          Como ingressar em 4 etapas
+          Como ingressar em 3 etapas
         </h2>
         <p className="text-xs text-slate-500">
-          Fluxo de admissão da Nexa University, pensado para reduzir burocracia
-          e acelerar a análise do seu cadastro.
+          Fluxo de matrícula da Nexa University: cadastro, escolha do curso com
+          mensalidade ativa e confirmação no Stripe.
         </p>
       </div>
       <div className="relative ml-2.5 space-y-6 border-l border-slate-200 pl-5">
@@ -18,10 +18,11 @@ export const InscricaoSidebar = () => {
             1
           </span>
           <h3 className="text-sm font-medium text-slate-900">
-            Cadastro simplificado
+            Cadastro do candidato
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Preenchimento de dados básicos e escolha do curso de interesse.
+            Nome, e-mail, CPF, telefone e data de nascimento para gerar o
+            vínculo acadêmico.
           </p>
         </div>
         <div className="relative">
@@ -29,10 +30,11 @@ export const InscricaoSidebar = () => {
             2
           </span>
           <h3 className="text-sm font-medium text-slate-900">
-            Análise de nota ou vestibular
+            Modalidade e curso
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Aproveitamento da nota do ENEM ou agendamento da prova online.
+            Primeiro escolha Presencial ou EAD; em seguida, o combo lista só os
+            cursos daquela modalidade.
           </p>
         </div>
         <div className="relative">
@@ -40,34 +42,24 @@ export const InscricaoSidebar = () => {
             3
           </span>
           <h3 className="text-sm font-medium text-slate-900">
-            Upload de documentos
+            Checkout e matrícula
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Envio digitalizado direto pela esteira de admissões.
-          </p>
-        </div>
-        <div className="relative">
-          <span className="absolute -left-[29px] top-0 flex size-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-medium text-slate-600 ring-4 ring-slate-50">
-            4
-          </span>
-          <h3 className="text-sm font-medium text-slate-900">
-            Matrícula e chave de acesso
-          </h3>
-          <p className="mt-0.5 text-xs text-slate-500">
-            Confirmação e liberação das credenciais do ecossistema Nexa.
+            Assinatura mensal com isenção de 100% na primeira fatura. A
+            matrícula fica pré-matriculada até o Stripe confirmar o pagamento.
           </p>
         </div>
       </div>
       <div className="space-y-2 rounded-xl border border-blue-100 bg-blue-50/70 p-4">
         <p className="text-xs font-medium text-blue-900">
-          Dúvidas com sua inscrição?
+          Sobre a primeira mensalidade
         </p>
         <p className="text-xs leading-relaxed text-blue-700">
-          Consultores acadêmicos da Nexa podem orientar sobre bolsas de mérito,
-          financiamento e aproveitamento de disciplinas.
+          O cartão é cadastrado no checkout. A taxa de inscrição não é cobrada:
+          o cupom institucional zera a primeira fatura.
         </p>
         <p className="flex items-center gap-1 pt-1 text-xs font-medium text-blue-800">
-          Falar com um orientador
+          Continuar para o Stripe
           <ArrowRight className="size-3" />
         </p>
       </div>
