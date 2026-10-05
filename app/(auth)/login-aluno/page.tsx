@@ -15,7 +15,7 @@ const LoginAlunoPage = async () => {
         Login do aluno
       </h1>
       <p className="text-muted-foreground">
-        Acesso para aluno e responsável.
+        OpenSGA — acesso para aluno e responsável.
       </p>
     </div>
   );
