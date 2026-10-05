@@ -21,6 +21,8 @@ alwaysApply: true
 ## Estilização
 
 - **NUNCA** use cores hard-coded do Tailwind (como `text-white`, `bg-black`, etc.). **SEMPRE** use as cores do tema definidas em `@/app/globals.css` (ex: `text-background`, `bg-primary`, `border-border` etc.). Caso a cor necessária não exista no tema, crie uma nova variável CSS seguindo o padrão existente.
+- **Exceção — portal institucional:** em `app/(public)` e `components/public`, a paleta padrão do Tailwind (`slate-*`, `blue-*`, `emerald-*`, `white`, etc.) é permitida para fidelidade ao site Nexa University. Fora desses caminhos, continue usando apenas tokens do tema.
+- **Fontes do projeto (todo o app):** corpo `font-sans` (Plus Jakarta Sans), títulos `font-heading` ou `font-serif` (Playfair Display), código `font-mono` (JetBrains Mono).
 - Antes de criar uma nova variável de cor, **SEMPRE** busque na documentação do shadcn/ui sobre theming e veja se realmente é necessário.
 - **SEMPRE** veja os componentes que podem ser reutilizados para construção de uma página em `@/components/ui/page.tsx`.
 
