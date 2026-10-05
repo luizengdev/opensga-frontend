@@ -1,13 +1,20 @@
+import {CoursesSection} from "@/components/public/courses-section";
+import {CtaBanner} from "@/components/public/cta-banner";
+import {DiferenciaisSection} from "@/components/public/diferenciais-section";
+import {HeroCarousel} from "@/components/public/hero-carousel";
+import {InstitutionalSection} from "@/components/public/institutional-section";
+import {StudentShowcase} from "@/components/public/student-showcase";
+
 const HomePage = () => {
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="font-heading text-3xl font-medium text-foreground">
-        Portal Institucional
-      </h1>
-      <p className="text-muted-foreground">
-        Home do site institucional OpenSGA.
-      </p>
-    </div>
+    <>
+      <HeroCarousel />
+      <DiferenciaisSection />
+      <CoursesSection />
+      <InstitutionalSection />
+      <StudentShowcase />
+      <CtaBanner />
+    </>
   );
 };
 

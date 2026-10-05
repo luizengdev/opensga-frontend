@@ -9,7 +9,7 @@ const AlunoLayout = ({ children }: AlunoLayoutProps) => {
   return (
     <div className="flex min-h-full flex-1 bg-background">
       <aside className="flex w-64 shrink-0 flex-col gap-6 border-r border-sidebar-border bg-sidebar px-4 py-6 text-sidebar-foreground">
-        <p className="font-heading text-base font-medium">Área do aluno</p>
+        <p className="font-heading text-base font-medium">OpenSGA</p>
         <nav className="flex flex-col gap-1">
           <Link
             href="/area-aluno/dashboard"

@@ -1,50 +1,28 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
+import type {Metadata} from "next";
+import type {ReactNode} from "react";
 
-import { buttonVariants } from "@/components/ui/button";
+import {NexaMotionProvider} from "@/components/public/nexa-motion-provider";
+import {PublicFooter} from "@/components/public/public-footer";
+import {PublicNavbar} from "@/components/public/public-navbar";
+
+export const metadata: Metadata = {
+  title: "Nexa University | Formando líderes para a economia global",
+  description:
+    "Portal institucional e sistema de admissões da Nexa University. Excelência acadêmica, inovação tecnológica e alta empregabilidade executiva.",
+};
 
 interface PublicLayoutProps {
   children: ReactNode;
 }
 
-const PublicLayout = ({ children }: PublicLayoutProps) => {
+const PublicLayout = ({children}: PublicLayoutProps) => {
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-background">
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
-          <Link href="/" className="font-heading text-base font-medium text-foreground">
-            OpenSGA
-          </Link>
-          <nav className="flex items-center gap-2">
-            <Link
-              href="/inscricao"
-              className={buttonVariants({ variant: "ghost" })}
-            >
-              Inscrição
-            </Link>
-            <Link
-              href="/login-aluno"
-              className={buttonVariants({ variant: "outline" })}
-            >
-              Área do aluno
-            </Link>
-            <Link
-              href="/login-admin"
-              className={buttonVariants()}
-            >
-              Acesso interno
-            </Link>
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-10">
-        {children}
-      </main>
-      <footer className="border-t border-border bg-muted">
-        <div className="mx-auto w-full max-w-6xl px-4 py-6 text-sm text-muted-foreground">
-          OpenSGA — Portal Institucional
-        </div>
-      </footer>
+    <div className="nexa-theme flex min-h-full flex-1 flex-col bg-slate-50 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+      <NexaMotionProvider>
+        <PublicNavbar />
+        <main className="flex-1">{children}</main>
+        <PublicFooter />
+      </NexaMotionProvider>
     </div>
   );
 };

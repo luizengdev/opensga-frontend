@@ -15,7 +15,7 @@ const LoginAdminPage = async () => {
         Login administrativo
       </h1>
       <p className="text-muted-foreground">
-        Acesso para admin e professor.
+        OpenSGA — acesso para admin e professor.
       </p>
     </div>
   );
