@@ -78,3 +78,10 @@ export const ClientComponent = (props) => {
   return <></>;
 };
 ```
+
+## Pagamentos (Stripe)
+
+- **NUNCA** use `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` nem o SDK Stripe no frontend.
+- Precificação ADMIN: após `npx orval`, use os hooks de `@/lib/api/rc-generated` para `/financeiro/precos`. O admin informa valor em reais; a API sincroniza Product/Price no Stripe.
+- Checkout de matrícula: chame `POST /api/checkout` (ou o hook Orval equivalente) com `studentId`, `email` e `cursoModalidadeId`; redirecione o usuário para a `url` devolvida. Não monte Price/Product no client.
+- Webhooks Stripe são exclusivos da API (`POST /webhooks/stripe`).
