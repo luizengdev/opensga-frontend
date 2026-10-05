@@ -6,30 +6,17 @@ import {useMemo, useState} from "react";
 import {InscricaoForm} from "@/components/public/inscricao-form";
 import {InscricaoOfferStepper} from "@/components/public/inscricao-offer-stepper";
 import {Button} from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type {CatalogoCurso} from "@/lib/api/fetch-generated";
-import {
-  formatCatalogPrice,
-  listCampusOfertas,
-  listEstados,
-} from "@/lib/public/catalog";
+import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import type {CatalogoCurso, InscricaoAcesso} from "@/lib/api/fetch-generated";
+import {formatCatalogPrice, listCampusOfertas, listEstados} from "@/lib/public/catalog";
 
 interface InscricaoOfferPanelProps {
   catalogo: CatalogoCurso[];
   curso: CatalogoCurso;
+  onInscricaoConcluida: (acesso: InscricaoAcesso) => void;
 }
 
-export const InscricaoOfferPanel = ({
-  catalogo,
-  curso,
-}: InscricaoOfferPanelProps) => {
+export const InscricaoOfferPanel = ({catalogo, curso, onInscricaoConcluida}: InscricaoOfferPanelProps) => {
   const ofertas = useMemo(() => {
     return listCampusOfertas(catalogo, curso);
   }, [catalogo, curso]);
@@ -41,10 +28,7 @@ export const InscricaoOfferPanel = ({
   const selected = ofertas.find((item) => item.cursoId === cursoId) ?? curso;
   const estados = listEstados(ofertas);
 
-  const estadoItems = [
-    {label: "Estado", value: null},
-    ...estados.map((item) => ({label: item, value: item})),
-  ];
+  const estadoItems = [{label: "Estado", value: null}, ...estados.map((item) => ({label: item, value: item}))];
   const campusItems = [
     {label: "Polo/Unidade", value: null},
     ...ofertas
@@ -71,10 +55,7 @@ export const InscricaoOfferPanel = ({
           labels={["Selecione sua unidade", "Confira a melhor oferta", "Inscreva-se"]}
         />
       ) : (
-        <InscricaoOfferStepper
-          current={3}
-          labels={["Curso", "Dados", "Inscrição"]}
-        />
+        <InscricaoOfferStepper current={3} labels={["Curso", "Dados", "Inscrição"]} />
       )}
       {step === 1 ? (
         <div className="mt-6 space-y-4">
@@ -89,9 +70,7 @@ export const InscricaoOfferPanel = ({
               onValueChange={(value) => {
                 const nextEstado = value ?? "";
                 setEstado(nextEstado);
-                const firstCampus = ofertas.find(
-                  (item) => item.campus.estado === nextEstado,
-                );
+                const firstCampus = ofertas.find((item) => item.campus.estado === nextEstado);
                 setCursoId(firstCampus?.cursoId ?? "");
               }}
             >
@@ -150,17 +129,15 @@ export const InscricaoOfferPanel = ({
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Primeira mensalidade:</p>
-            <p className="font-heading text-3xl font-bold text-emerald-600">
-              {formatCatalogPrice(0, selected.moeda)}
-            </p>
+            <p className="font-heading text-3xl font-bold text-emerald-600">{formatCatalogPrice(0, selected.moeda)}</p>
             <p className="mt-3 text-sm text-slate-500">Demais mensalidades:</p>
             <p className="font-heading text-2xl font-bold text-slate-900">
               {formatCatalogPrice(selected.valor, selected.moeda)}
               <span className="text-sm font-medium text-slate-500">/mês</span>
             </p>
             <p className="mt-2 text-xs text-slate-500">
-              A taxa de inscrição é isenta pelo cupom institucional na primeira
-              fatura. O valor acima é a mensalidade cadastrada no OpenSGA.
+              A taxa de inscrição é isenta: você conclui sem cartão. As demais mensalidades podem ser pagas no cartão
+              (recorrente) ou no boleto.
             </p>
           </div>
           <div className="flex items-start justify-between gap-3">
@@ -170,26 +147,22 @@ export const InscricaoOfferPanel = ({
               </p>
               <p className="text-xs text-slate-500">{selected.campus.nome}</p>
             </div>
-            <Button
-              type="button"
-              variant="link"
-              className="h-auto p-0 text-blue-600"
-              onClick={() => setStep(1)}
-            >
+            <Button type="button" variant="link" className="h-auto p-0 text-blue-600" onClick={() => setStep(1)}>
               Trocar
             </Button>
           </div>
-          <Button
-            className="h-11 w-full bg-blue-600 text-white hover:bg-blue-700"
-            onClick={() => setStep(3)}
-          >
+          <Button className="h-11 w-full bg-blue-600 text-white hover:bg-blue-700" onClick={() => setStep(3)}>
             Inscreva-se
           </Button>
         </div>
       ) : null}
       {step === 3 ? (
         <div className="mt-6">
-          <InscricaoForm curso={selected} onBack={() => setStep(2)} />
+          <InscricaoForm
+            curso={selected}
+            onBack={() => setStep(2)}
+            onCompleted={onInscricaoConcluida}
+          />
         </div>
       ) : null}
     </div>

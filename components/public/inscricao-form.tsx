@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
-import type {CatalogoCurso} from "@/lib/api/fetch-generated";
+import type {CatalogoCurso, InscricaoAcesso} from "@/lib/api/fetch-generated";
 import {useCreateInscricao} from "@/lib/api/rc-generated";
 import {
   formatCpf,
@@ -46,9 +46,10 @@ type InscricaoValues = z.infer<typeof inscricaoSchema>;
 interface InscricaoFormProps {
   curso: CatalogoCurso;
   onBack: () => void;
+  onCompleted: (acesso: InscricaoAcesso) => void;
 }
 
-export const InscricaoForm = ({curso, onBack}: InscricaoFormProps) => {
+export const InscricaoForm = ({curso, onBack, onCompleted}: InscricaoFormProps) => {
   const {mutate: createInscricao, isPending: isCreating} = useCreateInscricao();
   const [section, setSection] = useState<1 | 2>(1);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -104,7 +105,17 @@ export const InscricaoForm = ({curso, onBack}: InscricaoFormProps) => {
       },
       {
         onSuccess: (checkout) => {
-          window.location.assign(checkout.url);
+          if (checkout.url) {
+            window.location.assign(checkout.url);
+            return;
+          }
+
+          if (checkout.acesso) {
+            onCompleted(checkout.acesso);
+            return;
+          }
+
+          window.location.assign("/inscricao?checkout=isento");
         },
         onError: (error) => {
           setSubmitError(
@@ -297,7 +308,7 @@ export const InscricaoForm = ({curso, onBack}: InscricaoFormProps) => {
               className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
               disabled={isCreating}
             >
-              {isCreating ? "Redirecionando ao Stripe..." : "Ir para pagamento"}
+              {isCreating ? "Enviando inscrição..." : "Concluir inscrição"}
             </Button>
           )}
         </div>

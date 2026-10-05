@@ -9,6 +9,12 @@ interface InscricaoPageProps {
 const InscricaoPage = async ({searchParams}: InscricaoPageProps) => {
   const params = await searchParams;
   const catalogo = await getCatalogoCursos();
+  const checkoutOutcome =
+    params.checkout === "isento"
+      ? "isento"
+      : params.checkout === "success"
+        ? "pagamento"
+        : null;
 
   return (
     <div className="bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
@@ -19,8 +25,8 @@ const InscricaoPage = async ({searchParams}: InscricaoPageProps) => {
             concluir a matrícula.
           </p>
         ) : null}
-        {params.checkout === "success" ? (
-          <InscricaoSuccess />
+        {checkoutOutcome ? (
+          <InscricaoSuccess variant={checkoutOutcome} />
         ) : (
           <InscricaoCatalog
             catalogo={catalogo}

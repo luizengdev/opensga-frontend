@@ -29,9 +29,20 @@ export interface CreateInscricaoInput {
   cursoModalidadeId: string;
 }
 
+export type CheckoutStatus = "PRE_MATRICULADO" | "AGUARDANDO_PAGAMENTO";
+
+export interface InscricaoAcesso {
+  email: string;
+  ra: string;
+  senhaProvisoria: string | null;
+}
+
 export interface CheckoutSession {
-  url: string;
-  sessionId: string;
+  url: string | null;
+  sessionId: string | null;
+  requiresCheckout: boolean;
+  status: CheckoutStatus;
+  acesso: InscricaoAcesso | null;
 }
 
 export const getCatalogoCursos = async () => {
