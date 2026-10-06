@@ -219,6 +219,7 @@ export const useGetAuditoriaMec = (
     queryFn: () => getAuditoriaMec(id),
     initialData: options?.initialData,
     enabled: Boolean(id),
+    retry: false,
   });
 export const useGetComponentesMatriz = (
   id: string,

@@ -13,17 +13,27 @@ import {
 } from "@/components/ui/dialog";
 
 interface ConflictDialogProps {
+  confirmLabel?: string;
   dependencyMessage: string;
   entityName: string;
+  eyebrow?: string;
   onOpenChange: (open: boolean) => void;
   open: boolean;
+  recommendedAction?: string;
+  ruleLabel?: string;
+  title?: string;
 }
 
 export const ConflictDialog = ({
+  confirmLabel = "Entendido, Manter Registro",
   dependencyMessage,
   entityName,
+  eyebrow = "HTTP 409 Conflict · Integridade Relacional",
   onOpenChange,
   open,
+  recommendedAction = "Para prosseguir com o cancelamento desta entidade, transfira os registros dependentes ou remova-os individualmente na Secretaria.",
+  ruleLabel = "Regra ON DELETE RESTRICT",
+  title,
 }: ConflictDialogProps) => {
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -35,10 +45,10 @@ export const ConflictDialog = ({
             </div>
             <div>
               <span className="font-mono text-[11px] font-semibold tracking-wider text-destructive uppercase">
-                HTTP 409 Conflict · Integridade Relacional
+                {eyebrow}
               </span>
               <DialogTitle className="mt-0.5 tracking-tight">
-                Exclusão Bloqueada: {entityName}
+                {title ?? `Exclusão Bloqueada: ${entityName}`}
               </DialogTitle>
             </div>
           </div>
@@ -48,21 +58,19 @@ export const ConflictDialog = ({
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
             <div>
-              <p className="font-medium text-foreground">Regra ON DELETE RESTRICT</p>
+              <p className="font-medium text-foreground">{ruleLabel}</p>
               <p className="mt-1 text-muted-foreground">{dependencyMessage}</p>
             </div>
           </div>
         </div>
 
         <DialogDescription className="text-[11px] text-muted-foreground">
-          <strong className="text-foreground">Ação recomendada:</strong> Para prosseguir com o
-          cancelamento desta entidade, transfira os registros dependentes ou remova-os
-          individualmente na Secretaria.
+          <strong className="text-foreground">Ação recomendada:</strong> {recommendedAction}
         </DialogDescription>
 
         <DialogFooter className="-mx-0 -mb-0 border-0 bg-transparent p-0">
           <Button onClick={() => onOpenChange(false)} size="sm" type="button" variant="outline">
-            Entendido, Manter Registro
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

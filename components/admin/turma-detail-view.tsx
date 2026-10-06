@@ -23,6 +23,7 @@ import {z} from "zod";
 
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {ConflictDialog} from "@/components/admin/conflict-dialog";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {
@@ -59,8 +60,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {limiteFaltasDaDisciplina} from "@/lib/academic/carga-horaria";
+import {previewLancamento} from "@/lib/academic/lancamento-preview";
 import {TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
-import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
+import {getMutationErrorMessage, isConflictError} from "@/lib/admin/mutation-error";
 import type {DiarioClasse, Matricula, Turma} from "@/lib/api/fetch-generated";
 import {
   getGetDiariosQueryKey,
@@ -92,9 +95,6 @@ const parseNota = (value: string) => {
 
   return Number(value.replace(",", "."));
 };
-
-const CH_TOTAL = 80;
-const LIMITE_FALTAS = Math.floor(CH_TOTAL * 0.25);
 
 const formatDiarioNota = (nota: number | null, accent = false) => {
   if (nota === null) {
@@ -133,6 +133,7 @@ export const TurmaDetailView = ({
   const [enturmarOpen, setEnturmarOpen] = useState(false);
   const [avaliacaoOpen, setAvaliacaoOpen] = useState(false);
   const [diarioSelecionado, setDiarioSelecionado] = useState<DiarioClasse | null>(null);
+  const [fechamentoConflict, setFechamentoConflict] = useState<string | null>(null);
 
   const atual = turma ?? initialTurma;
   const listaDiarios = diarios ?? initialDiarios;
@@ -160,56 +161,23 @@ export const TurmaDetailView = ({
     defaultValues: {notaAv: "", notaAvs: "", notaAv3: "", totalFaltas: 0},
   });
 
+  const chTurma = atual.chTotal ?? listaDiarios.find((diario) => diario.chTotal > 0)?.chTotal ?? 0;
+  const limiteTurma = limiteFaltasDaDisciplina(chTurma);
   const notas = avaliacaoForm.watch();
-  const preview = useMemo(() => {
-    const av = parseNota(notas.notaAv);
-    const avs = parseNota(notas.notaAvs);
-    const av3 = parseNota(notas.notaAv3);
-    const faltas = Number(notas.totalFaltas) || 0;
-    const avValida = av !== undefined && !Number.isNaN(av);
-    const avsValida = avs !== undefined && !Number.isNaN(avs);
-
-    if (!avValida && !avsValida) {
-      return {ns: "—", mf: "—", habilitaAv3: false, status: "Lançamentos parciais"};
-    }
-
-    const ns = Math.max(avValida ? av : Number.NEGATIVE_INFINITY, avsValida ? avs : Number.NEGATIVE_INFINITY);
-
-    if (faltas > LIMITE_FALTAS) {
-      return {
-        ns: ns.toFixed(1),
-        mf: "—",
-        habilitaAv3: false,
-        status: "Reprovado por frequência (faltas > 25%) no fechamento",
-      };
-    }
-
-    if (ns >= 6) {
-      return {
-        ns: ns.toFixed(1),
-        mf: ns.toFixed(1),
-        habilitaAv3: false,
-        status: "Aprovado direto por nota semestral (NS ≥ 6,0)",
-      };
-    }
-
-    if (av3 === undefined || Number.isNaN(av3)) {
-      return {
-        ns: ns.toFixed(1),
-        mf: "Aguardando AV3",
-        habilitaAv3: true,
-        status: "Elegível para AV3 (NS < 6,0)",
-      };
-    }
-
-    const mf = (ns + av3) / 2;
-    return {
-      ns: ns.toFixed(1),
-      mf: mf.toFixed(1),
-      habilitaAv3: true,
-      status: mf >= 5 ? "Aprovado após AV3 (MF ≥ 5,0)" : "Reprovado por nota (MF < 5,0)",
-    };
-  }, [notas]);
+  const chLancamento =
+    diarioSelecionado && diarioSelecionado.chTotal > 0 ? diarioSelecionado.chTotal : chTurma;
+  const limiteLancamento = limiteFaltasDaDisciplina(chLancamento);
+  const preview = useMemo(
+    () =>
+      previewLancamento({
+        notaAv: parseNota(notas.notaAv),
+        notaAvs: parseNota(notas.notaAvs),
+        notaAv3: parseNota(notas.notaAv3),
+        totalFaltas: Number(notas.totalFaltas) || 0,
+        chTotal: chLancamento,
+      }),
+    [chLancamento, notas],
+  );
 
   const invalidate = () => {
     void queryClient.invalidateQueries({
@@ -257,7 +225,7 @@ export const TurmaDetailView = ({
       },
       {
         onSuccess: () => {
-          toast.success("Notas lançadas.");
+          toast.success("Lançamento salvo. Aprovação e CH entram só no fechamento.");
           invalidate();
           setAvaliacaoOpen(false);
         },
@@ -276,7 +244,14 @@ export const TurmaDetailView = ({
           toast.success(`Semestre fechado: ${resultado.fechados} diários integralizados.`);
           invalidate();
         },
-        onError: (error) => toast.error(getMutationErrorMessage(error)),
+        onError: (error) => {
+          if (isConflictError(error)) {
+            setFechamentoConflict(getMutationErrorMessage(error));
+            return;
+          }
+
+          toast.error(getMutationErrorMessage(error));
+        },
       },
     );
   };
@@ -357,7 +332,9 @@ export const TurmaDetailView = ({
             </span>
             <div className="mt-1 truncate text-xs font-medium">{atual.salaOuLink || "Sala padrão"}</div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">
-              Carga Horária: {CH_TOTAL}h (Máx {LIMITE_FALTAS} faltas)
+              {chTurma > 0
+                ? `Carga Horária: ${chTurma}h (Máx ${limiteTurma} faltas)`
+                : "Carga horária da disciplina na matriz ainda não vinculada"}
             </div>
           </CardContent>
         </Card>
@@ -384,15 +361,16 @@ export const TurmaDetailView = ({
             <span>Regulamento Geral de Avaliação e Integralização MEC</span>
           </div>
           <p className="text-muted-foreground">
-            Nota Semestral:{" "}
-            <strong className="font-mono text-foreground">MAX(AV, AVS)</strong>. Aprovação
-            Direta se NS ≥ 6,0 e Faltas ≤ 25%. Em caso de AV3:{" "}
-            <strong className="font-mono text-foreground">MF = (NS + AV3) / 2</strong> (Aprovado se MF ≥
-            5,0). RF ignora notas.
+            Lançamento calcula{" "}
+            <strong className="font-mono text-foreground">NS = MAX(AV, AVS)</strong> e habilita AV3.
+            Aprovação, RF, RN e CH cumprida só no{" "}
+            <strong className="text-foreground">fechamento do semestre</strong>. RF se faltas &gt; 25%
+            da CH da disciplina. AV3:{" "}
+            <strong className="font-mono text-foreground">MF = (NS + AV3) / 2</strong> (corte 5,0).
           </p>
         </div>
         <span className="shrink-0 rounded border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground">
-          CH: {CH_TOTAL}h · Limite Faltas: {LIMITE_FALTAS}h
+          {chTurma > 0 ? `CH: ${chTurma}h · Limite faltas: ${limiteTurma}h` : "CH da matriz pendente"}
         </span>
       </div>
 
@@ -433,7 +411,10 @@ export const TurmaDetailView = ({
               </TableHeader>
               <TableBody>
                 {listaDiarios.map((diario) => {
-                  const reprovadoPorFalta = diario.totalFaltas > LIMITE_FALTAS;
+                  const chDiario = diario.chTotal > 0 ? diario.chTotal : chTurma;
+                  const limiteDiario = limiteFaltasDaDisciplina(chDiario);
+                  const riscoRf =
+                    diario.statusDisciplina === "EM_ABERTO" && chDiario > 0 && diario.totalFaltas > limiteDiario;
                   const email = emailPorMatricula.get(diario.matriculaId);
 
                   return (
@@ -460,28 +441,33 @@ export const TurmaDetailView = ({
                       <TableCell className="text-center font-mono tabular-nums">
                         <span
                           className={
-                            reprovadoPorFalta ? "font-bold text-destructive" : "text-foreground"
+                            riscoRf || diario.statusDisciplina === "RF"
+                              ? "font-bold text-destructive"
+                              : "text-foreground"
                           }
                         >
                           {diario.totalFaltas}h
                         </span>
-                        <span className="text-[10px] text-muted-foreground"> / {LIMITE_FALTAS}h</span>
+                        <span className="text-[10px] text-muted-foreground"> / {limiteDiario}h</span>
                       </TableCell>
                       <TableCell className="text-center font-mono font-bold tabular-nums">
                         {diario.mediaFinal === null ? "—" : diario.mediaFinal.toFixed(1)}
                       </TableCell>
                       <TableCell className="text-center">
-                        {diario.statusDisciplina === "RF" || reprovadoPorFalta ? (
-                          <Badge variant="destructive">RF</Badge>
-                        ) : diario.statusDisciplina === "APROVADO" ? (
-                          <Badge variant="success">Aprovado</Badge>
-                        ) : diario.statusDisciplina === "RN" ? (
-                          <Badge variant="destructive">RN</Badge>
-                        ) : diario.habilitaAv3 ? (
-                          <Badge variant="warning">AV3</Badge>
-                        ) : (
-                          <Badge variant="warning">Em Aberto</Badge>
-                        )}
+                        <div className="flex flex-wrap items-center justify-center gap-1">
+                          {diario.statusDisciplina === "RF" ? (
+                            <Badge variant="destructive">RF</Badge>
+                          ) : diario.statusDisciplina === "APROVADO" ? (
+                            <Badge variant="success">Aprovado</Badge>
+                          ) : diario.statusDisciplina === "RN" ? (
+                            <Badge variant="destructive">RN</Badge>
+                          ) : diario.habilitaAv3 ? (
+                            <Badge variant="warning">AV3</Badge>
+                          ) : (
+                            <Badge variant="outline">Em Aberto</Badge>
+                          )}
+                          {riscoRf ? <Badge variant="warning">Risco RF</Badge> : null}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -504,20 +490,20 @@ export const TurmaDetailView = ({
       </Card>
 
       <Dialog onOpenChange={setEnturmarOpen} open={enturmarOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Enturmar Aluno na Disciplina</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="wrap-break-word">
               Vincular matrícula ativa da matriz curricular à turma {atual.codigo}
             </DialogDescription>
           </DialogHeader>
           <Form {...enturmarForm}>
-            <form className="space-y-4" onSubmit={onEnturmar}>
+            <form className="min-w-0 space-y-4" onSubmit={onEnturmar}>
               <FormField
                 control={enturmarForm.control}
                 name="matriculaId"
                 render={({field}) => (
-                  <FormItem>
+                  <FormItem className="min-w-0">
                     <FormLabel>Selecione o Aluno (Matrícula Ativa)</FormLabel>
                     <FormControl>
                       <AdminSelect
@@ -561,7 +547,7 @@ export const TurmaDetailView = ({
             </DialogTitle>
             <DialogDescription>
               {diarioSelecionado
-                ? `RA: ${diarioSelecionado.aluno.ra} · Turma: ${atual.codigo} · Carga: ${CH_TOTAL}h`
+                ? `RA: ${diarioSelecionado.aluno.ra} · Turma: ${atual.codigo} · Carga: ${chLancamento}h`
                 : "Avaliação"}
             </DialogDescription>
           </DialogHeader>
@@ -628,7 +614,7 @@ export const TurmaDetailView = ({
                       <FormLabel>Total de Faltas (Horas)</FormLabel>
                       <FormControl>
                         <Input
-                          max={CH_TOTAL}
+                          max={chLancamento > 0 ? chLancamento : undefined}
                           min={0}
                           onBlur={field.onBlur}
                           onChange={(event) => field.onChange(event.target.valueAsNumber)}
@@ -638,7 +624,9 @@ export const TurmaDetailView = ({
                         />
                       </FormControl>
                       <FormDescription className="text-[11px]">
-                        Limite legal: {LIMITE_FALTAS} horas (25% de {CH_TOTAL}h)
+                        {chLancamento > 0
+                          ? `Limite legal: ${limiteLancamento}h (25% de ${chLancamento}h)`
+                          : "Limite de 25% sobre a CH da disciplina na matriz"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -674,6 +662,22 @@ export const TurmaDetailView = ({
           </Form>
         </DialogContent>
       </Dialog>
+
+      <ConflictDialog
+        confirmLabel="Entendido, continuar lançamento"
+        dependencyMessage={fechamentoConflict ?? ""}
+        entityName={`Turma ${atual.codigo}`}
+        eyebrow="HTTP 409 Conflict · Fechamento atômico"
+        onOpenChange={(open) => {
+          if (!open) {
+            setFechamentoConflict(null);
+          }
+        }}
+        open={fechamentoConflict !== null}
+        recommendedAction="Lance AV ou AVS para obter a NS e, se NS < 6,0 com frequência regular, informe a AV3. Nenhum diário é persistido até a turma estar completa."
+        ruleLabel="POST /diario/fechar-semestre"
+        title={`Fechamento bloqueado: turma ${atual.codigo}`}
+      />
     </div>
   );
 };

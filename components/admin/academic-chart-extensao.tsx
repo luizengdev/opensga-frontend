@@ -1,8 +1,9 @@
 import {AlertTriangle, CheckCircle2} from "lucide-react";
 
 import {Card, CardContent} from "@/components/ui/card";
-import {formatPercent} from "@/lib/admin/format";
+import {chExtensaoDaAuditoria} from "@/lib/academic/carga-horaria";
 import {scaleExtensaoBar} from "@/lib/admin/academic-charts";
+import {formatPercent} from "@/lib/admin/format";
 import type {AuditoriaMec} from "@/lib/api/fetch-generated";
 
 interface AcademicChartExtensaoProps {
@@ -46,7 +47,7 @@ export const AcademicChartExtensao = ({auditorias}: AcademicChartExtensaoProps) 
                       {formatPercent(item.percentualExtensao)}
                     </span>
                     <span className="font-sans text-[10px] text-muted-foreground">
-                      ({item.chExtensaoTotal}h de {item.chTotalGeral}h)
+                      ({chExtensaoDaAuditoria(item)}h de {item.chTotalGeral}h)
                     </span>
                   </div>
                 </div>

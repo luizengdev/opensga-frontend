@@ -180,19 +180,19 @@ export interface AuditoriaMec {
   codigoPolo: string;
   chTotalGeral: number;
   chExtensaoTotal: number;
-  chExtensaoPorTipo?: number;
+  chExtensaoPorTipo: number;
   percentualExtensao: number;
   cumpreRegra10PorcentoExtensao: boolean;
   chPresencialTotal: number;
   percentualPresencial: number;
   chSincronaTotal: number;
   percentualSincrono: number;
-  chAssincronaTotal?: number;
-  percentualAssincrono?: number;
+  chAssincronaTotal: number;
+  percentualAssincrono: number;
   percentualPresencialESincrono: number;
   quantidadeComponentes: number;
-  conformeDecreto12456?: boolean;
-  violacoes?: Array<{
+  conformeDecreto12456: boolean;
+  violacoes: Array<{
     codigo: "IDENTIDADE_CH" | "MODALIDADE_DISCIPLINA" | "EXTENSAO_10";
     mensagem: string;
     disciplinaId?: string;
@@ -212,6 +212,7 @@ export interface Turma {
   salaOuLink: string | null;
   tipoEntrega: TipoEntrega;
   disciplina: Disciplina;
+  chTotal: number | null;
   professor: {
     id: string;
     matricula: string;
@@ -245,6 +246,7 @@ export interface DiarioClasse {
   mediaFinal: number | null;
   habilitaAv3: boolean;
   totalFaltas: number;
+  chTotal: number;
   chCumprida: number;
   statusDisciplina: StatusDisciplina;
   semestreFechado: boolean;
@@ -276,6 +278,7 @@ export interface FecharSemestreResponse {
     mediaFinal: number | null;
     habilitaAv3: boolean;
     totalFaltas: number;
+    chTotal: number;
     chCumprida: number;
     statusDisciplina: StatusDisciplina;
     semestreFechado: boolean;

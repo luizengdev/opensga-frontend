@@ -11,6 +11,7 @@ import {z} from "zod";
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
@@ -25,6 +26,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -32,8 +34,9 @@ import {
 } from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Separator} from "@/components/ui/separator";
+import {chExtensaoDaAuditoria, splitCargaHoraria} from "@/lib/academic/carga-horaria";
 import {formatPercent} from "@/lib/admin/format";
-import {TIPO_COMPONENTE_LABEL, TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
+import {MODALIDADE_LABEL, TIPO_COMPONENTE_LABEL, TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
 import type {
   AuditoriaMec,
@@ -76,20 +79,31 @@ const matrizSchema = z.object({
   anoVigencia: z.number().int().min(2020),
 });
 
-const componenteSchema = z.object({
-  disciplinaId: z.string().min(1),
-  semestreIdeal: z.number().int().min(1).max(16),
-  tipo: z.enum([
-    "CORE_VIDA_CARREIRA",
-    "ESPECIFICO",
-    "ELETIVA_TRILHA",
-    "EXTENSAO",
-    "OPTATIVO",
-  ]),
-  tipoEntrega: z.enum(["PRESENCIAL_FISICO", "SINCRONO_MEDIADO", "ASSINCRONO_DIGITAL"]),
-  chTotal: z.number().int().min(10),
-  chExtensao: z.number().int().min(0),
-});
+const componenteSchema = z
+  .object({
+    disciplinaId: z.string().min(1),
+    semestreIdeal: z.number().int().min(1).max(16),
+    tipo: z.enum([
+      "CORE_VIDA_CARREIRA",
+      "ESPECIFICO",
+      "ELETIVA_TRILHA",
+      "EXTENSAO",
+      "OPTATIVO",
+    ]),
+    tipoEntrega: z.enum(["PRESENCIAL_FISICO", "SINCRONO_MEDIADO", "ASSINCRONO_DIGITAL"]),
+    chTotal: z.number().int().min(10),
+    chPresencial: z.number().int().min(0),
+    chSincrona: z.number().int().min(0),
+    chAssincrona: z.number().int().min(0),
+    chExtensao: z.number().int().min(0),
+  })
+  .refine(
+    (payload) => payload.chPresencial + payload.chSincrona + payload.chAssincrona === payload.chTotal,
+    {
+      message: "A soma presencial + síncrona + assíncrona deve ser igual à CH total.",
+      path: ["chAssincrona"],
+    },
+  );
 
 type MatrizFormValues = z.infer<typeof matrizSchema>;
 type ComponenteFormValues = z.infer<typeof componenteSchema>;
@@ -135,6 +149,8 @@ export const MatrizesView = ({
   const listaComponentes = componentes ?? initialComponentes;
   const relatorio = auditoria ?? null;
   const matrizAtual = listaMatrizes.find((item) => item.id === selectedId);
+  const modalidadeMatriz =
+    listaCursos.find((curso) => curso.id === matrizAtual?.cursoId)?.modalidade ?? "PRESENCIAL";
 
   const matrizForm = useForm<MatrizFormValues>({
     resolver: zodResolver(matrizSchema),
@@ -153,6 +169,9 @@ export const MatrizesView = ({
       tipo: "ESPECIFICO",
       tipoEntrega: "PRESENCIAL_FISICO",
       chTotal: 80,
+      chPresencial: 80,
+      chSincrona: 0,
+      chAssincrona: 0,
       chExtensao: 0,
     },
   });
@@ -192,13 +211,6 @@ export const MatrizesView = ({
       return;
     }
 
-    const chBuckets =
-      payload.tipoEntrega === "PRESENCIAL_FISICO"
-        ? {chPresencial: payload.chTotal, chSincrona: 0, chAssincrona: 0}
-        : payload.tipoEntrega === "SINCRONO_MEDIADO"
-          ? {chPresencial: 0, chSincrona: payload.chTotal, chAssincrona: 0}
-          : {chPresencial: 0, chSincrona: 0, chAssincrona: payload.chTotal};
-
     addComponente(
       {
         matrizCurricularId: selectedId,
@@ -207,8 +219,10 @@ export const MatrizesView = ({
         tipo: payload.tipo,
         tipoEntrega: payload.tipoEntrega,
         chTotal: payload.chTotal,
+        chPresencial: payload.chPresencial,
+        chSincrona: payload.chSincrona,
+        chAssincrona: payload.chAssincrona,
         chExtensao: payload.chExtensao,
-        ...chBuckets,
       },
       {
         onSuccess: () => {
@@ -244,7 +258,20 @@ export const MatrizesView = ({
             </Button>
             <Button
               disabled={!selectedId}
-              onClick={() => setComponenteDialogOpen(true)}
+              onClick={() => {
+                const chTotal = 80;
+                const distribuicao = splitCargaHoraria(chTotal, modalidadeMatriz);
+                componenteForm.reset({
+                  disciplinaId: listaDisciplinas[0]?.id ?? "",
+                  semestreIdeal: 1,
+                  tipo: "ESPECIFICO",
+                  tipoEntrega: "PRESENCIAL_FISICO",
+                  chTotal,
+                  ...distribuicao,
+                  chExtensao: 0,
+                });
+                setComponenteDialogOpen(true);
+              }}
               size="sm"
             >
               <PlusCircle />
@@ -252,7 +279,7 @@ export const MatrizesView = ({
             </Button>
           </>
         }
-        description="Verificação da curricularização da extensão universitária (Resolução CNE/CES nº 7/2018)."
+        description="Auditoria da Resolução CNE/CES nº 7/2018 (extensão ≥ 10%) e do Decreto nº 12.456/2026 (multimodalidade)."
         eyebrow="Regulação e diretrizes curriculares nacionais"
         title="Matrizes curriculares e auditoria MEC"
       />
@@ -275,20 +302,35 @@ export const MatrizesView = ({
                 <span className="font-mono text-xs font-semibold tracking-wider text-foreground uppercase">
                   Relatório de auditoria MEC
                 </span>
-                {relatorio.cumpreRegra10PorcentoExtensao ? (
-                  <Badge>
+                {relatorio.conformeDecreto12456 ? (
+                  <Badge variant="success">
                     <CheckCircle2 />
-                    Conforme MEC (≥ 10% extensão)
+                    Conforme Decreto 12.456
                   </Badge>
                 ) : (
                   <Badge variant="destructive">
                     <AlertTriangle />
-                    Não conforme (&lt; 10% extensão)
+                    Conflito regulatório
+                  </Badge>
+                )}
+                {relatorio.cumpreRegra10PorcentoExtensao ? (
+                  <Badge>
+                    <CheckCircle2 />
+                    Extensão ≥ 10%
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive">
+                    <AlertTriangle />
+                    Extensão &lt; 10%
                   </Badge>
                 )}
               </div>
               <CardDescription>
-                {relatorio.cursoNome} · {relatorio.campusNome} (Polo: {relatorio.codigoPolo})
+                {relatorio.cursoNome}
+                {relatorio.modalidadeCurso
+                  ? ` · ${MODALIDADE_LABEL[relatorio.modalidadeCurso]}`
+                  : ""}{" "}
+                · {relatorio.campusNome} (Polo: {relatorio.codigoPolo})
               </CardDescription>
             </div>
             <div className="text-right">
@@ -317,7 +359,7 @@ export const MatrizesView = ({
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-5">
               <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-muted/40 p-3">
                 <span className="block text-[11px] text-muted-foreground">Carga horária geral</span>
                 <span className="font-mono text-base font-bold tabular-nums">
@@ -325,9 +367,9 @@ export const MatrizesView = ({
                 </span>
               </div>
               <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-muted/40 p-3">
-                <span className="block text-[11px] text-muted-foreground">CH de extensão</span>
+                <span className="block text-[11px] text-muted-foreground">CH extensão (tipo)</span>
                 <span className="font-mono text-base font-bold tabular-nums">
-                  {relatorio.chExtensaoTotal}h
+                  {chExtensaoDaAuditoria(relatorio)}h
                 </span>
               </div>
               <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-muted/40 p-3">
@@ -348,7 +390,31 @@ export const MatrizesView = ({
                   ({formatPercent(relatorio.percentualSincrono)})
                 </span>
               </div>
+              <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-muted/40 p-3">
+                <span className="block text-[11px] text-muted-foreground">CH assíncrona</span>
+                <span className="font-mono text-base font-bold tabular-nums">
+                  {relatorio.chAssincronaTotal}h
+                </span>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  ({formatPercent(relatorio.percentualAssincrono)})
+                </span>
+              </div>
             </div>
+            {relatorio.violacoes.length > 0 ? (
+              <Alert variant="destructive">
+                <AlertTriangle />
+                <AlertTitle>Violações do Decreto nº 12.456/2026 e da extensão curricular</AlertTitle>
+                <AlertDescription>
+                  <ul className="mt-1 list-disc space-y-1 pl-4">
+                    {relatorio.violacoes.map((violacao) => (
+                      <li key={`${violacao.codigo}-${violacao.disciplinaId ?? violacao.mensagem}`}>
+                        {violacao.mensagem}
+                      </li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}
@@ -372,8 +438,8 @@ export const MatrizesView = ({
                     <Badge variant="secondary">{TIPO_COMPONENTE_LABEL[item.tipo]}</Badge>
                   </div>
                   <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                    {TIPO_ENTREGA_LABEL[item.tipoEntrega]} · CH {item.chTotal}h · Extensão{" "}
-                    {item.chExtensao}h
+                    {TIPO_ENTREGA_LABEL[item.tipoEntrega]} · CH {item.chTotal}h (P {item.chPresencial}h · S{" "}
+                    {item.chSincrona}h · A {item.chAssincrona}h)
                   </p>
                 </div>
                 <Button
@@ -489,7 +555,7 @@ export const MatrizesView = ({
           <DialogHeader>
             <DialogTitle>Adicionar componente</DialogTitle>
             <DialogDescription>
-              A soma das cargas deve respeitar a CH total do componente.
+              CH total = presencial + síncrona + assíncrona. Os pisos seguem a modalidade {MODALIDADE_LABEL[modalidadeMatriz]}.
             </DialogDescription>
           </DialogHeader>
           <Form {...componenteForm}>
@@ -546,12 +612,84 @@ export const MatrizesView = ({
                         <Input
                           min={10}
                           onBlur={field.onBlur}
+                          onChange={(event) => {
+                            const chTotal = event.target.valueAsNumber;
+                            field.onChange(chTotal);
+                            if (!Number.isNaN(chTotal)) {
+                              const distribuicao = splitCargaHoraria(chTotal, modalidadeMatriz);
+                              componenteForm.setValue("chPresencial", distribuicao.chPresencial);
+                              componenteForm.setValue("chSincrona", distribuicao.chSincrona);
+                              componenteForm.setValue("chAssincrona", distribuicao.chAssincrona);
+                            }
+                          }}
+                          ref={field.ref}
+                          type="number"
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <FormField
+                  control={componenteForm.control}
+                  name="chPresencial"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>CH presencial</FormLabel>
+                      <FormControl>
+                        <Input
+                          min={0}
+                          onBlur={field.onBlur}
                           onChange={(event) => field.onChange(event.target.valueAsNumber)}
                           ref={field.ref}
                           type="number"
                           value={field.value}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={componenteForm.control}
+                  name="chSincrona"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>CH síncrona</FormLabel>
+                      <FormControl>
+                        <Input
+                          min={0}
+                          onBlur={field.onBlur}
+                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                          ref={field.ref}
+                          type="number"
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={componenteForm.control}
+                  name="chAssincrona"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>CH assíncrona</FormLabel>
+                      <FormControl>
+                        <Input
+                          min={0}
+                          onBlur={field.onBlur}
+                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                          ref={field.ref}
+                          type="number"
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-[11px]">Soma = CH total</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
