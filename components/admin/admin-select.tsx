@@ -41,7 +41,7 @@ export const AdminSelect = ({
       }}
       value={value || null}
     >
-      <SelectTrigger className="w-full">
+      <SelectTrigger className="w-full min-w-0 max-w-full">
         <SelectValue placeholder={placeholder}>
           {() => selectedLabel ?? placeholder ?? ""}
         </SelectValue>
