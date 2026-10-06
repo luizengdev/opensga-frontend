@@ -41,6 +41,8 @@ import type {
   TipoReclamacao,
   Turma,
   UpdateGradesInput,
+  UpdateProfessorInput,
+  UpdateUserInput,
   User,
 } from "./types";
 
@@ -140,6 +142,13 @@ export const getProfessores = async () => requestApi<Professor[]>("/api/v1/users
 export const createProfessor = async (data: CreateProfessorInput) =>
   requestApi<Professor>("/api/v1/users/professores", {method: "POST", body: JSON.stringify(data)});
 export const getAlunos = async () => requestApi<Aluno[]>("/api/v1/users/alunos");
+export const updateUser = async ({id, data}: {id: string; data: UpdateUserInput}) =>
+  requestApi<User>(`/api/v1/users/${id}`, {method: "PATCH", body: JSON.stringify(data)});
+export const updateProfessor = async ({id, data}: {id: string; data: UpdateProfessorInput}) =>
+  requestApi<Professor>(`/api/v1/users/professores/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 export const deleteUser = async (id: string) =>
   requestApi<DeleteResponse>(`/api/v1/users/${id}`, {method: "DELETE"});
 

@@ -320,6 +320,23 @@ export interface CreateAdminInput {
   senha: string;
 }
 
+export interface UpdateUserInput {
+  nome?: string;
+  email?: string;
+  cpf?: string;
+  telefone?: string | null;
+  ativo?: boolean;
+  senha?: string;
+}
+
+export interface UpdateProfessorInput {
+  nome?: string;
+  telefone?: string | null;
+  ativo?: boolean;
+  titulacao?: string;
+  departamento?: string;
+}
+
 export interface CreateProfessorInput {
   nome: string;
   email: string;

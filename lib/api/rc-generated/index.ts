@@ -60,6 +60,8 @@ import {
   updateFaturaStatus,
   updateMatriculaStatus,
   updatePreco,
+  updateProfessor,
+  updateUser,
   type AddComponenteInput,
   type AdminDashboard,
   type CatalogoCurso,
@@ -82,6 +84,8 @@ import {
   type StatusFatura,
   type StatusMatricula,
   type UpdateGradesInput,
+  type UpdateProfessorInput,
+  type UpdateUserInput,
 } from "@/lib/api/fetch-generated";
 
 export const getGetCatalogoCursosQueryKey = () => {
@@ -299,6 +303,14 @@ export const useGetAlunos = (options?: {initialData?: Awaited<ReturnType<typeof 
     queryKey: ["/api/v1/users/alunos"],
     queryFn: getAlunos,
     initialData: options?.initialData,
+  });
+export const useUpdateUser = () =>
+  useMutation({
+    mutationFn: (payload: {id: string; data: UpdateUserInput}) => updateUser(payload),
+  });
+export const useUpdateProfessor = () =>
+  useMutation({
+    mutationFn: (payload: {id: string; data: UpdateProfessorInput}) => updateProfessor(payload),
   });
 export const useDeleteUser = () => useMutation({mutationFn: deleteUser});
 
