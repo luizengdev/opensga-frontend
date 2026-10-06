@@ -11,6 +11,7 @@ import {z} from "zod";
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import {formatCurrencyBrl} from "@/lib/admin/format";
 import {MODALIDADE_LABEL} from "@/lib/admin/labels";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
 import type {Curso, PrecoCurso} from "@/lib/api/fetch-generated";
 import {
@@ -75,6 +77,7 @@ export const PrecosView = ({initialCursos, initialPrecos}: PrecosViewProps) => {
   const [editing, setEditing] = useState<PrecoCurso | null>(null);
   const lista = precos ?? initialPrecos;
   const listaCursos = cursos ?? initialCursos;
+  const pagination = useClientPagination({items: lista});
   const cursosSemPreco = useMemo(() => {
     const usados = new Set(lista.map((preco) => preco.cursoId));
     return listaCursos.filter((curso) => !usados.has(curso.id));
@@ -150,7 +153,8 @@ export const PrecosView = ({initialCursos, initialPrecos}: PrecosViewProps) => {
               title="Nenhum preço cadastrado"
             />
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Curso</TableHead>
@@ -162,7 +166,7 @@ export const PrecosView = ({initialCursos, initialPrecos}: PrecosViewProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lista.map((preco) => (
+                {pagination.pageItems.map((preco) => (
                   <TableRow key={preco.id}>
                     <TableCell className="font-medium">{preco.curso.nome}</TableCell>
                     <TableCell>
@@ -222,6 +226,15 @@ export const PrecosView = ({initialCursos, initialPrecos}: PrecosViewProps) => {
                 ))}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>

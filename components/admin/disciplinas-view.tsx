@@ -11,6 +11,7 @@ import {z} from "zod";
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSearchField} from "@/components/admin/admin-search-field";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -39,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import type {Disciplina} from "@/lib/api/fetch-generated";
 import {
   getGetDisciplinasQueryKey,
@@ -105,6 +107,8 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
       );
     });
   }, [lista, searchTerm]);
+
+  const pagination = useClientPagination({items: filtradas, resetKey: searchTerm});
 
   const onSubmit = form.handleSubmit((payload) => {
     const data = {...payload, codigo: payload.codigo.toUpperCase()};
@@ -173,7 +177,8 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
               title="Nenhuma disciplina encontrada"
             />
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Código</TableHead>
@@ -182,7 +187,7 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtradas.map((disciplina) => (
+                {pagination.pageItems.map((disciplina) => (
                   <TableRow key={disciplina.id}>
                     <TableCell className="font-mono">{disciplina.codigo}</TableCell>
                     <TableCell>{disciplina.nome}</TableCell>
@@ -217,6 +222,15 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
                 ))}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>

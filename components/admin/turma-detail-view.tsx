@@ -23,6 +23,7 @@ import {z} from "zod";
 
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {ConfirmDialog} from "@/components/admin/confirm-dialog";
 import {ConflictDialog} from "@/components/admin/conflict-dialog";
 import {Badge} from "@/components/ui/badge";
@@ -64,6 +65,7 @@ import {
 import {limiteFaltasDaDisciplina} from "@/lib/academic/carga-horaria";
 import {previewLancamento} from "@/lib/academic/lancamento-preview";
 import {TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {getMutationErrorMessage, isConflictError} from "@/lib/admin/mutation-error";
 import type {DiarioClasse, Matricula, Turma} from "@/lib/api/fetch-generated";
 import {
@@ -139,6 +141,7 @@ export const TurmaDetailView = ({
 
   const atual = turma ?? initialTurma;
   const listaDiarios = diarios ?? initialDiarios;
+  const pagination = useClientPagination({items: listaDiarios});
   const listaMatriculas = initialMatriculas;
   const emailPorMatricula = useMemo(
     () =>
@@ -399,7 +402,8 @@ export const TurmaDetailView = ({
               title="Nenhum aluno enturmado"
             />
           ) : (
-            <Table className="text-xs">
+            <>
+              <Table className="text-xs">
               <TableHeader className="bg-muted/30 text-[10px] font-medium tracking-wider uppercase">
                 <TableRow>
                   <TableHead className="text-muted-foreground">RA</TableHead>
@@ -415,7 +419,7 @@ export const TurmaDetailView = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {listaDiarios.map((diario) => {
+                {pagination.pageItems.map((diario) => {
                   const chDiario = diario.chTotal > 0 ? diario.chTotal : chTurma;
                   const limiteDiario = limiteFaltasDaDisciplina(chDiario);
                   const riscoRf =
@@ -490,6 +494,15 @@ export const TurmaDetailView = ({
                 })}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>

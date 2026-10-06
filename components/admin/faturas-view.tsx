@@ -11,6 +11,7 @@ import {z} from "zod";
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {StatusFaturaBadge} from "@/components/admin/status-fatura-badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import {formatCurrencyBrl, formatDateBr} from "@/lib/admin/format";
 import {STATUS_FATURA_LABEL} from "@/lib/admin/labels";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
 import type {Aluno, Fatura, StatusFatura} from "@/lib/api/fetch-generated";
 import {
@@ -76,6 +78,7 @@ export const FaturasView = ({initialAlunos, initialFaturas}: FaturasViewProps) =
   const [dialogOpen, setDialogOpen] = useState(false);
   const lista = faturas ?? initialFaturas;
   const listaAlunos = alunos ?? initialAlunos;
+  const pagination = useClientPagination({items: lista});
 
   const form = useForm<FaturaFormValues>({
     resolver: zodResolver(faturaSchema),
@@ -125,7 +128,8 @@ export const FaturasView = ({initialAlunos, initialFaturas}: FaturasViewProps) =
               title="Nenhuma fatura"
             />
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Aluno</TableHead>
@@ -136,7 +140,7 @@ export const FaturasView = ({initialAlunos, initialFaturas}: FaturasViewProps) =
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lista.map((fatura) => (
+                {pagination.pageItems.map((fatura) => (
                   <TableRow key={fatura.id}>
                     <TableCell>
                       <div className="font-medium">{fatura.aluno.user.nome}</div>
@@ -178,6 +182,15 @@ export const FaturasView = ({initialAlunos, initialFaturas}: FaturasViewProps) =
                 ))}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>

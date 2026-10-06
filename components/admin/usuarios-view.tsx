@@ -11,6 +11,7 @@ import {z} from "zod";
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
@@ -40,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {ROLE_LABEL} from "@/lib/admin/labels";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
 import type {Aluno, Professor, User} from "@/lib/api/fetch-generated";
 import {
@@ -89,6 +91,7 @@ export const UsuariosView = ({
   const listaUsers = users ?? initialUsers;
   const listaProfessores = professores ?? initialProfessores;
   const listaAlunos = alunos ?? initialAlunos;
+  const pagination = useClientPagination({items: listaUsers});
 
   const form = useForm<PessoaFormValues>({
     resolver: zodResolver(pessoaSchema),
@@ -185,7 +188,8 @@ export const UsuariosView = ({
               title="Sem usuários"
             />
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
@@ -197,7 +201,7 @@ export const UsuariosView = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {listaUsers.map((user) => (
+                {pagination.pageItems.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.nome}</TableCell>
                     <TableCell className="font-mono text-xs">{user.email}</TableCell>
@@ -233,6 +237,15 @@ export const UsuariosView = ({
                 ))}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>

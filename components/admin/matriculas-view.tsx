@@ -12,6 +12,7 @@ import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSearchField} from "@/components/admin/admin-search-field";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {StatusMatriculaBadge} from "@/components/admin/status-matricula-badge";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/table";
 import {formatPeriodoLetivo, getPeriodoLetivoAtual} from "@/lib/academic/periodo-letivo";
 import {MODALIDADE_LABEL, STATUS_MATRICULA_LABEL} from "@/lib/admin/labels";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
 import type {Curso, Matricula, Matriz, StatusMatricula} from "@/lib/api/fetch-generated";
 import {
@@ -165,6 +167,11 @@ export const MatriculasView = ({
     });
   }, [lista, searchTerm, statusFilter]);
 
+  const pagination = useClientPagination({
+    items: filtradas,
+    resetKey: `${searchTerm}|${statusFilter}`,
+  });
+
   const invalidate = () => {
     void queryClient.invalidateQueries({queryKey: getGetMatriculasQueryKey()});
   };
@@ -276,11 +283,12 @@ export const MatriculasView = ({
               title="Nenhuma matrícula encontrada"
             />
           ) : (
-            <Table className="text-xs">
+            <>
+              <Table className="text-xs">
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="px-4 text-[10px] font-medium tracking-wider uppercase">
-                    Registro acadêmico (RA)
+                    RA
                   </TableHead>
                   <TableHead className="px-4 text-[10px] font-medium tracking-wider uppercase">
                     Aluno / contato
@@ -303,7 +311,7 @@ export const MatriculasView = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtradas.map((matricula) => (
+                {pagination.pageItems.map((matricula) => (
                   <TableRow key={matricula.id}>
                     <TableCell className="px-4 font-mono font-bold">
                       {matricula.aluno.ra}
@@ -360,6 +368,16 @@ export const MatriculasView = ({
                 ))}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                className="px-4"
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>

@@ -12,6 +12,7 @@ import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSearchField} from "@/components/admin/admin-search-field";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
@@ -41,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {MODALIDADE_LABEL} from "@/lib/admin/labels";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
 import type {Campus, Curso, ModalidadeCurso} from "@/lib/api/fetch-generated";
 import {
@@ -180,6 +182,8 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
     });
   }, [lista, listaCampi, searchTerm]);
 
+  const pagination = useClientPagination({items: filtrados, resetKey: searchTerm});
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -219,7 +223,8 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
               title="Nenhum curso encontrado"
             />
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Curso</TableHead>
@@ -231,7 +236,7 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtrados.map((curso) => (
+                {pagination.pageItems.map((curso) => (
                   <TableRow key={curso.id}>
                     <TableCell className="font-medium">{curso.nome}</TableCell>
                     <TableCell>{campusNome(curso.campusId)}</TableCell>
@@ -273,6 +278,15 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
                 ))}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>
