@@ -1,17 +1,64 @@
-import { requireAdminSession } from "@/lib/auth/require-admin-session";
+import {DashboardAdminView} from "@/components/admin/dashboard-admin-view";
+import {DashboardProfessorView} from "@/components/admin/dashboard-professor-view";
+import {getPeriodoLetivoAtual} from "@/lib/academic/periodo-letivo";
+import {
+  getAuditoriaMec,
+  getCampi,
+  getComunicados,
+  getDashboardAdmin,
+  getDashboardProfessor,
+  getDiarios,
+  getFaturas,
+  getMatrizes,
+  getMe,
+  getTurmas,
+} from "@/lib/api/fetch-generated";
+import {requireAdminSession} from "@/lib/auth/require-admin-session";
 
 const DashboardAdminPage = async () => {
-  await requireAdminSession();
+  const session = await requireAdminSession();
+  const periodo = getPeriodoLetivoAtual();
+
+  if (session.role === "PROFESSOR") {
+    const [dashboard, turmas, diarios, me] = await Promise.all([
+      getDashboardProfessor(periodo),
+      getTurmas(periodo),
+      getDiarios(),
+      getMe(),
+    ]);
+
+    return (
+      <DashboardProfessorView
+        initialDashboard={dashboard}
+        initialDiarios={diarios}
+        initialTurmas={turmas}
+        nome={me.nome}
+      />
+    );
+  }
+
+  const [dashboard, turmas, faturas, comunicados, campi, matrizes] = await Promise.all([
+    getDashboardAdmin(periodo),
+    getTurmas(periodo),
+    getFaturas(),
+    getComunicados(),
+    getCampi(),
+    getMatrizes(),
+  ]);
+
+  const auditorias = await Promise.all(
+    matrizes.filter((matriz) => matriz.ativo).map((matriz) => getAuditoriaMec(matriz.id)),
+  );
 
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="font-heading text-2xl font-medium text-foreground">
-        Dashboard administrativo
-      </h1>
-      <p className="text-muted-foreground">
-        Home da área administrativa e do professor.
-      </p>
-    </div>
+    <DashboardAdminView
+      initialAuditorias={auditorias}
+      initialCampi={campi}
+      initialComunicados={comunicados}
+      initialDashboard={dashboard}
+      initialFaturas={faturas}
+      initialTurmas={turmas}
+    />
   );
 };
 
