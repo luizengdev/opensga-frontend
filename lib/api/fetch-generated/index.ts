@@ -1,5 +1,8 @@
 import {requestApi} from "@/lib/api/request";
 
+export * from "./admin";
+export * from "./types";
+
 export type CatalogoModalidade = "PRESENCIAL" | "SEMIPRESENCIAL" | "EAD";
 export type CatalogoTipoGraduacao = "BACHARELADO" | "LICENCIATURA" | "TECNOLOGO";
 export type CatalogoIntervalo = "MONTH";
@@ -57,6 +60,32 @@ export const getCatalogoCursos = async () => {
 
 export const createInscricao = async (data: CreateInscricaoInput) => {
   return requestApi<CheckoutSession>("/api/inscricao", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
+
+export interface LoginUser {
+  id: string;
+  nome: string;
+  email: string;
+  cpf: string;
+  role: import("./types").AuthRole;
+  avatarUrl: string | null;
+}
+
+export interface LoginInput {
+  identificador: string;
+  senha: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: LoginUser;
+}
+
+export const login = async (data: LoginInput) => {
+  return requestApi<LoginResponse>("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify(data),
   });
