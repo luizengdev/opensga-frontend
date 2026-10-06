@@ -24,7 +24,7 @@ export const AcademicChartOcupacao = ({polos}: AcademicChartOcupacaoProps) => {
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
           {polos.length === 0 ? (
             <p className="text-xs text-muted-foreground">Não há turmas no período para calcular ocupação.</p>
           ) : (

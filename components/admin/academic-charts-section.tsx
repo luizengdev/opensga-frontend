@@ -92,7 +92,7 @@ export const AcademicChartsSection = ({
         </Tabs>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <div className={cn("transition-opacity", tab === "matriculas" ? "ring-2 ring-ring/50 rounded-xl" : "opacity-70")}>
           <AcademicChartMatriculas matriculasPorStatus={matriculasPorStatus} />
         </div>

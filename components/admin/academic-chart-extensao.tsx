@@ -28,7 +28,7 @@ export const AcademicChartExtensao = ({auditorias}: AcademicChartExtensaoProps) 
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
           {auditorias.length === 0 ? (
             <p className="text-xs text-muted-foreground">Nenhuma matriz curricular para auditar.</p>
           ) : (
