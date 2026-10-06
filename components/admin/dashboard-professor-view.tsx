@@ -12,19 +12,22 @@ import Link from "next/link";
 
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
+import {ComunicadosResumoCard} from "@/components/admin/comunicados-resumo-card";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {formatPeriodoLetivo} from "@/lib/academic/periodo-letivo";
 import {TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
-import type {DiarioClasse, ProfessorDashboard, Turma} from "@/lib/api/fetch-generated";
+import type {Comunicado, DiarioClasse, ProfessorDashboard, Turma} from "@/lib/api/fetch-generated";
 import {
+  useGetComunicados,
   useGetDashboardProfessor,
   useGetDiarios,
   useGetTurmas,
 } from "@/lib/api/rc-generated";
 
 interface DashboardProfessorViewProps {
+  initialComunicados: Comunicado[];
   initialDashboard: ProfessorDashboard;
   initialDiarios: DiarioClasse[];
   initialTurmas: Turma[];
@@ -32,6 +35,7 @@ interface DashboardProfessorViewProps {
 }
 
 export const DashboardProfessorView = ({
+  initialComunicados,
   initialDashboard,
   initialDiarios,
   initialTurmas,
@@ -51,11 +55,13 @@ export const DashboardProfessorView = ({
     initialData: initialTurmas,
   });
   const {data: diarios} = useGetDiarios({initialData: initialDiarios});
+  const {data: comunicados} = useGetComunicados({initialData: initialComunicados});
 
   const painel = dashboard ?? initialDashboard;
   const minhasTurmas = turmas ?? initialTurmas;
   const idsTurmas = new Set(minhasTurmas.map((turma) => turma.id));
   const meusDiarios = (diarios ?? initialDiarios).filter((diario) => idsTurmas.has(diario.turmaId));
+  const listaComunicados = comunicados ?? initialComunicados;
   const pendenciasNs = meusDiarios.filter((diario) => diario.notaSemestral === null).length;
   const pendenciasAv3 = meusDiarios.filter((diario) => diario.habilitaAv3 && diario.notaAv3 === null).length;
   const lancamentosPendentes = pendenciasNs + pendenciasAv3;
@@ -197,6 +203,15 @@ export const DashboardProfessorView = ({
           )}
         </CardContent>
       </Card>
+
+      <ComunicadosResumoCard
+        actionLabel="Abrir mural"
+        comunicados={listaComunicados}
+        description="Avisos da secretaria destinados ao corpo docente"
+        emptyText="Nenhum comunicado vigente destinado ao seu perfil."
+        href="/area-admin/comunicados"
+        title="Comunicados oficiais"
+      />
     </div>
   );
 };

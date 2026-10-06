@@ -54,6 +54,7 @@ const professorNavGroups: AdminNavGroup[] = [
     items: [
       {label: "Meu Dashboard", href: "/area-admin/dashboard"},
       {label: "Minhas Turmas", href: "/area-admin/turmas"},
+      {label: "Comunicados", href: "/area-admin/comunicados"},
     ],
   },
 ];

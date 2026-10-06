@@ -20,15 +20,17 @@ const DashboardAdminPage = async () => {
   const periodo = getPeriodoLetivoAtual();
 
   if (session.role === "PROFESSOR") {
-    const [dashboard, turmas, diarios, me] = await Promise.all([
+    const [dashboard, turmas, diarios, me, comunicados] = await Promise.all([
       getDashboardProfessor(periodo),
       getTurmas(periodo),
       getDiarios(),
       getMe(),
+      getComunicados(),
     ]);
 
     return (
       <DashboardProfessorView
+        initialComunicados={comunicados}
         initialDashboard={dashboard}
         initialDiarios={diarios}
         initialTurmas={turmas}
@@ -41,7 +43,7 @@ const DashboardAdminPage = async () => {
     getDashboardAdmin(periodo),
     getTurmas(periodo),
     getFaturas(),
-    getComunicados(),
+    getComunicados({publicoAlvo: "ADMIN"}),
     getCampi(),
     getMatrizes(),
   ]);

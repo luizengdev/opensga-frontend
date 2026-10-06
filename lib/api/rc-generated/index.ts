@@ -64,6 +64,7 @@ import {
   updateUser,
   type AddComponenteInput,
   type AdminDashboard,
+  type AuthRole,
   type CatalogoCurso,
   type CreateAdminInput,
   type CreateCampusInput,
@@ -355,13 +356,15 @@ export const useUpdateFaturaStatus = () =>
     mutationFn: (payload: {id: string; status: StatusFatura}) => updateFaturaStatus(payload),
   });
 
-export const getGetComunicadosQueryKey = () => ["/api/v1/comunicados"] as const;
+export const getGetComunicadosQueryKey = (query?: {publicoAlvo?: AuthRole}) =>
+  ["/api/v1/comunicados", query] as const;
 export const useGetComunicados = (options?: {
+  query?: {publicoAlvo?: AuthRole};
   initialData?: Awaited<ReturnType<typeof getComunicados>>;
 }) =>
   useQuery({
-    queryKey: getGetComunicadosQueryKey(),
-    queryFn: getComunicados,
+    queryKey: getGetComunicadosQueryKey(options?.query),
+    queryFn: () => getComunicados(options?.query),
     initialData: options?.initialData,
   });
 export const useCreateComunicado = () =>

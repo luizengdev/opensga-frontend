@@ -4,6 +4,7 @@ import type {
   AddComponenteInput,
   AdminDashboard,
   Aluno,
+  AuthRole,
   AuditoriaMec,
   Campus,
   Comunicado,
@@ -191,7 +192,8 @@ export const updateFaturaStatus = async ({id, status}: {id: string; status: Stat
     body: JSON.stringify({status}),
   });
 
-export const getComunicados = async () => requestApi<Comunicado[]>("/api/v1/comunicados");
+export const getComunicados = async (query?: {publicoAlvo?: AuthRole}) =>
+  requestApi<Comunicado[]>(`/api/v1/comunicados${toQueryString(query)}`);
 export const createComunicado = async (data: CreateComunicadoInput) =>
   requestApi<Comunicado>("/api/v1/comunicados", {method: "POST", body: JSON.stringify(data)});
 export const deleteComunicado = async (id: string) =>

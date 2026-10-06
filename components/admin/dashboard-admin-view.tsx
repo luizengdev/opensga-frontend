@@ -14,6 +14,7 @@ import Link from "next/link";
 
 import {AcademicChartsSection} from "@/components/admin/academic-charts-section";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
+import {ComunicadosResumoCard} from "@/components/admin/comunicados-resumo-card";
 import {StatusFaturaBadge} from "@/components/admin/status-fatura-badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
@@ -85,7 +86,10 @@ export const DashboardAdminView = ({
     initialData: initialTurmas,
   });
   const {data: faturas} = useGetFaturas({initialData: initialFaturas});
-  const {data: comunicados} = useGetComunicados({initialData: initialComunicados});
+  const {data: comunicados} = useGetComunicados({
+    query: {publicoAlvo: "ADMIN"},
+    initialData: initialComunicados,
+  });
   const {data: campi} = useGetCampi({initialData: initialCampi});
 
   const painel = dashboard ?? initialDashboard;
@@ -367,38 +371,14 @@ export const DashboardAdminView = ({
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Comunicados oficiais</CardTitle>
-              <CardDescription>Avisos vigentes expedidos pela secretaria</CardDescription>
-            </div>
-            <Button
-              className="text-xs"
-              nativeButton={false} render={<Link href="/area-admin/comunicados" />}
-              size="sm"
-              variant="ghost"
-            >
-              Gerenciar
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {listaComunicados.slice(0, 2).map((comunicado) => (
-              <div
-                className="space-y-1 rounded-[calc(var(--radius)-4px)] border border-border p-3"
-                key={comunicado.id}
-              >
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-foreground">{comunicado.titulo}</span>
-                  <span className="font-mono text-muted-foreground">
-                    {formatDateBr(comunicado.criadoEm)}
-                  </span>
-                </div>
-                <p className="line-clamp-2 text-xs text-muted-foreground">{comunicado.conteudo}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <ComunicadosResumoCard
+          actionLabel="Gerenciar"
+          comunicados={listaComunicados}
+          description="Avisos vigentes expedidos à secretaria"
+          emptyText="Nenhum comunicado vigente destinado ao perfil administrador."
+          href="/area-admin/comunicados"
+          title="Comunicados oficiais"
+        />
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
