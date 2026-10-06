@@ -1,34 +1,18 @@
 import dayjs from "dayjs";
 import { cookies } from "next/headers";
 
-export type SessionRole = "ADMIN" | "PROFESSOR" | "ALUNO" | "RESPONSAVEL";
+import { isSessionRole, type SessionRole } from "./roles";
+
+import { AUTH_COOKIE_NAME } from "./cookie-name";
+
+export { AUTH_COOKIE_NAME } from "./cookie-name";
+export { isAdminRole, isAlunoRole, type SessionRole } from "./roles";
 
 export interface Session {
   sub: string;
   role: SessionRole;
   email: string;
 }
-
-const SESSION_ROLES: SessionRole[] = [
-  "ADMIN",
-  "PROFESSOR",
-  "ALUNO",
-  "RESPONSAVEL",
-];
-
-const AUTH_COOKIE_NAME = "auth_token";
-
-export const isAlunoRole = (role: SessionRole) => {
-  return role === "ALUNO" || role === "RESPONSAVEL";
-};
-
-export const isAdminRole = (role: SessionRole) => {
-  return role === "ADMIN" || role === "PROFESSOR";
-};
-
-const isSessionRole = (value: unknown): value is SessionRole => {
-  return typeof value === "string" && SESSION_ROLES.some((role) => role === value);
-};
 
 const decodeJwtPayload = (token: string) => {
   const segments = token.split(".");
@@ -57,6 +41,22 @@ const decodeJwtPayload = (token: string) => {
   } catch {
     return null;
   }
+};
+
+export const getAuthTokenExpiry = (token: string) => {
+  const payload = decodeJwtPayload(token);
+
+  if (!payload) {
+    return null;
+  }
+
+  const exp = payload.exp;
+
+  if (typeof exp !== "number") {
+    return null;
+  }
+
+  return dayjs.unix(exp);
 };
 
 export const getSession = async (): Promise<Session | null> => {
