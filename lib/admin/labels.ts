@@ -1,0 +1,68 @@
+import type {
+  AuthRole,
+  ModalidadeCurso,
+  StatusFatura,
+  StatusMatricula,
+  StatusReclamacao,
+  TipoComponente,
+  TipoEntrega,
+  TipoReclamacao,
+} from "@/lib/api/fetch-generated";
+
+export const STATUS_MATRICULA_LABEL: Record<StatusMatricula, string> = {
+  PRE_MATRICULADO: "Pré-matriculado",
+  ATIVO: "Ativo",
+  TRANCADO: "Trancado",
+  CANCELADO: "Cancelado",
+  FORMADO: "Formado",
+  EVADIDO: "Evadido",
+};
+
+export const STATUS_FATURA_LABEL: Record<StatusFatura, string> = {
+  PENDENTE: "Pendente",
+  PAGA: "Paga",
+  ATRASADA: "Atrasada",
+  CANCELADA: "Cancelada",
+};
+
+export const STATUS_RECLAMACAO_LABEL: Record<StatusReclamacao, string> = {
+  ABERTO: "Aberto",
+  EM_ANALISE: "Em análise",
+  RESPONDIDO: "Respondido",
+  FECHADO: "Fechado",
+};
+
+export const TIPO_RECLAMACAO_LABEL: Record<TipoReclamacao, string> = {
+  FINANCEIRO: "Financeiro",
+  ACADEMICO: "Acadêmico",
+  SECRETARIA: "Secretaria",
+  INFRAESTRUTURA: "Infraestrutura",
+  OUVIDORIA_GERAL: "Ouvidoria geral",
+};
+
+export const MODALIDADE_LABEL: Record<ModalidadeCurso, string> = {
+  PRESENCIAL: "Presencial",
+  SEMIPRESENCIAL: "Semipresencial",
+  EAD: "EAD",
+};
+
+export const TIPO_COMPONENTE_LABEL: Record<TipoComponente, string> = {
+  CORE_VIDA_CARREIRA: "Core vida e carreira",
+  ESPECIFICO: "Específico",
+  ELETIVA_TRILHA: "Eletiva de trilha",
+  EXTENSAO: "Extensão",
+  OPTATIVO: "Optativo",
+};
+
+export const TIPO_ENTREGA_LABEL: Record<TipoEntrega, string> = {
+  PRESENCIAL_FISICO: "Presencial físico",
+  SINCRONO_MEDIADO: "Síncrono mediado",
+  ASSINCRONO_DIGITAL: "Assíncrono digital",
+};
+
+export const ROLE_LABEL: Record<AuthRole, string> = {
+  ADMIN: "Administrador",
+  PROFESSOR: "Professor",
+  ALUNO: "Aluno",
+  RESPONSAVEL: "Responsável",
+};
