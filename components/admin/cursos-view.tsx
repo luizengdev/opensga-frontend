@@ -3,13 +3,14 @@
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useQueryClient} from "@tanstack/react-query";
 import {GraduationCap, Pencil, PlusCircle, Trash2} from "lucide-react";
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {useForm} from "react-hook-form";
 import {toast} from "sonner";
 import {z} from "zod";
 
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
+import {AdminSearchField} from "@/components/admin/admin-search-field";
 import {AdminSelect} from "@/components/admin/admin-select";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -77,6 +78,7 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
   const {mutate: deleteCurso, isPending: isDeleting} = useDeleteCurso();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Curso | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const lista = cursos ?? initialCursos;
   const listaCampi = campi ?? initialCampi;
 
@@ -157,6 +159,27 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
     return listaCampi.find((campus) => campus.id === campusId)?.nome ?? campusId;
   };
 
+  const filtrados = useMemo(() => {
+    const termo = searchTerm.trim().toLowerCase();
+
+    if (termo.length === 0) {
+      return lista;
+    }
+
+    return lista.filter((curso) => {
+      const campus = listaCampi.find((item) => item.id === curso.campusId);
+      const campos = [
+        curso.nome,
+        curso.codigoMec ?? "",
+        MODALIDADE_LABEL[curso.modalidade],
+        campus?.nome ?? "",
+        campus?.codigoPolo ?? "",
+      ];
+
+      return campos.some((campo) => campo.toLowerCase().includes(termo));
+    });
+  }, [lista, listaCampi, searchTerm]);
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -173,11 +196,27 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
 
       <Card>
         <CardContent>
+          <AdminSearchField
+            onValueChange={setSearchTerm}
+            placeholder="Buscar por nome, campus, modalidade ou código MEC..."
+            value={searchTerm}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
           {lista.length === 0 ? (
             <AdminEmptyState
               description="Cadastre um campus antes de criar cursos de graduação."
               icon={GraduationCap}
               title="Nenhum curso cadastrado"
+            />
+          ) : filtrados.length === 0 ? (
+            <AdminEmptyState
+              description="Nenhum curso corresponde ao termo informado. Ajuste a busca para ver a oferta."
+              icon={GraduationCap}
+              title="Nenhum curso encontrado"
             />
           ) : (
             <Table>
@@ -192,7 +231,7 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lista.map((curso) => (
+                {filtrados.map((curso) => (
                   <TableRow key={curso.id}>
                     <TableCell className="font-medium">{curso.nome}</TableCell>
                     <TableCell>{campusNome(curso.campusId)}</TableCell>
