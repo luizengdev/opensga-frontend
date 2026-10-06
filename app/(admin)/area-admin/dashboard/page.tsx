@@ -46,9 +46,13 @@ const DashboardAdminPage = async () => {
     getMatrizes(),
   ]);
 
-  const auditorias = await Promise.all(
-    matrizes.filter((matriz) => matriz.ativo).map((matriz) => getAuditoriaMec(matriz.id)),
-  );
+  const auditorias = (
+    await Promise.allSettled(
+      matrizes.filter((matriz) => matriz.ativo).map((matriz) => getAuditoriaMec(matriz.id)),
+    )
+  )
+    .filter((resultado) => resultado.status === "fulfilled")
+    .map((resultado) => resultado.value);
 
   return (
     <DashboardAdminView
