@@ -54,9 +54,11 @@ export const DashboardProfessorView = ({
 
   const painel = dashboard ?? initialDashboard;
   const minhasTurmas = turmas ?? initialTurmas;
-  const meusDiarios = diarios ?? initialDiarios;
+  const idsTurmas = new Set(minhasTurmas.map((turma) => turma.id));
+  const meusDiarios = (diarios ?? initialDiarios).filter((diario) => idsTurmas.has(diario.turmaId));
   const pendenciasNs = meusDiarios.filter((diario) => diario.notaSemestral === null).length;
   const pendenciasAv3 = meusDiarios.filter((diario) => diario.habilitaAv3 && diario.notaAv3 === null).length;
+  const lancamentosPendentes = pendenciasNs + pendenciasAv3;
   const periodoLabel = formatPeriodoLetivo(periodo);
 
   return (
@@ -117,18 +119,18 @@ export const DashboardProfessorView = ({
             <p className="mt-2 text-[11px] text-muted-foreground">Matrículas regulares vinculadas</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={lancamentosPendentes > 0 ? "border-warning/40 bg-warning/5" : undefined}>
           <CardContent>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Lançamentos pendentes</span>
-              {painel.lancamentosPendentes > 0 ? (
+              {lancamentosPendentes > 0 ? (
                 <AlertCircle className="size-4 text-warning" />
               ) : (
                 <CheckCircle2 className="size-4 text-success" />
               )}
             </div>
             <div className="mt-1 font-mono text-2xl font-bold tabular-nums">
-              {painel.lancamentosPendentes}
+              {lancamentosPendentes}
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
               {pendenciasNs} sem NS · {pendenciasAv3} aguardando AV3
@@ -169,7 +171,7 @@ export const DashboardProfessorView = ({
                         <span className="font-mono text-sm font-semibold">{turma.codigo}</span>
                         <Badge variant="outline">{TIPO_ENTREGA_LABEL[turma.tipoEntrega]}</Badge>
                         {semNotas > 0 ? (
-                          <Badge variant="destructive">{semNotas} notas pendentes</Badge>
+                          <Badge variant="warning">{semNotas} notas pendentes</Badge>
                         ) : null}
                       </div>
                       <h3 className="text-sm font-medium text-foreground">{turma.disciplina.nome}</h3>

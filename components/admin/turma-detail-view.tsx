@@ -23,6 +23,7 @@ import {z} from "zod";
 
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {ConfirmDialog} from "@/components/admin/confirm-dialog";
 import {ConflictDialog} from "@/components/admin/conflict-dialog";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -134,6 +135,7 @@ export const TurmaDetailView = ({
   const [avaliacaoOpen, setAvaliacaoOpen] = useState(false);
   const [diarioSelecionado, setDiarioSelecionado] = useState<DiarioClasse | null>(null);
   const [fechamentoConflict, setFechamentoConflict] = useState<string | null>(null);
+  const [fecharConfirmOpen, setFecharConfirmOpen] = useState(false);
 
   const atual = turma ?? initialTurma;
   const listaDiarios = diarios ?? initialDiarios;
@@ -243,8 +245,11 @@ export const TurmaDetailView = ({
         onSuccess: (resultado) => {
           toast.success(`Semestre fechado: ${resultado.fechados} diários integralizados.`);
           invalidate();
+          setFecharConfirmOpen(false);
         },
         onError: (error) => {
+          setFecharConfirmOpen(false);
+
           if (isConflictError(error)) {
             setFechamentoConflict(getMutationErrorMessage(error));
             return;
@@ -283,7 +288,7 @@ export const TurmaDetailView = ({
         <div className="flex flex-wrap gap-2">
           <Button
             disabled={isFechando || listaDiarios.length === 0 || semestreJaFechado}
-            onClick={onFecharSemestre}
+            onClick={() => setFecharConfirmOpen(true)}
             size="sm"
             variant="outline"
           >
@@ -662,6 +667,17 @@ export const TurmaDetailView = ({
           </Form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        confirmLabel="Fechar semestre"
+        description={`O fechamento da turma ${atual.codigo} integraliza a CH dos aprovados, aplica RF se as faltas ultrapassarem 25% da carga e calcula a AV3. Esta ação não pode ser desfeita.`}
+        icon={Lock}
+        isPending={isFechando}
+        onConfirm={onFecharSemestre}
+        onOpenChange={setFecharConfirmOpen}
+        open={fecharConfirmOpen}
+        title="Fechar semestre desta turma?"
+      />
 
       <ConflictDialog
         confirmLabel="Entendido, continuar lançamento"
