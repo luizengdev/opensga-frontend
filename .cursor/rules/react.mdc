@@ -20,9 +20,24 @@ alwaysApply: true
 
 ## Estilização
 
-- **NUNCA** use cores hard-coded do Tailwind (como `text-white`, `bg-black`, etc.). **SEMPRE** use as cores do tema definidas em `@/app/globals.css` (ex: `text-background`, `bg-primary`, `border-border` etc.). Caso a cor necessária não exista no tema, crie uma nova variável CSS seguindo o padrão existente.
+- **NUNCA** use cores hard-coded do Tailwind (como `text-white`, `bg-black`, etc.). **SEMPRE** use as cores do tema definidas em `@/app/globals.css` (ex: `text-background`, `bg-primary`, `border-border`, `bg-success`, `text-warning` etc.). Caso a cor necessária não exista no tema, crie uma nova variável CSS seguindo o padrão existente e registre-a em `@theme inline`.
+- **Paleta do portal administrativo:** tokens institucionais do Vite em `:root` / `.dark` — navy (`--primary`, `--sidebar`), canvas frio (`--background` hsl 210 20% 98%), gráficos cromáticos (`--chart-1` a `--chart-5`) e status semânticos (`--success`, `--warning`, `--info`, `--destructive`). **NUNCA** use `emerald-*` / `sky-*` / `amber-*` no admin: use `success` / `info` / `warning`.
 - **Exceção — portal institucional:** em `app/(public)` e `components/public`, a paleta padrão do Tailwind (`slate-*`, `blue-*`, `emerald-*`, `white`, etc.) é permitida para fidelidade ao site Nexa University. Fora desses caminhos, continue usando apenas tokens do tema.
-- **Fontes do projeto (todo o app):** corpo `font-sans` (Plus Jakarta Sans), títulos `font-heading` ou `font-serif` (Playfair Display), código `font-mono` (JetBrains Mono).
+- **Fontes do projeto (todo o app):** corpo `font-sans` (Plus Jakarta Sans), código `font-mono` (JetBrains Mono).
+- **Tipografia de títulos (`font-heading` / `font-serif`):** Source Serif 4 + Newsreader, com pilha nativa `ui-serif, Georgia, Cambria, "Times New Roman", Times, serif`. Tracking `-0.015em` (aplicado em `.font-heading` e `.font-serif` em `globals.css`). **NUNCA** use Playfair Display nem outras serifadas de display de alto contraste de traço (editorial/moda). A pilha é institucional, para telas digitais, com x-height equilibrada e serifas de suporte robustas.
+- Carregue Source Serif 4 (`--font-source-serif`) e Newsreader (`--font-newsreader`) via `next/font/google` no `app/layout.tsx` e referencie em `--font-family-heading` em `globals.css`.
+
+## Painel administrativo — gráficos analíticos
+
+- O dashboard da Secretaria (`/area-admin/dashboard`, papel `ADMIN`) **DEVE** incluir `AcademicChartsSection` (`@/components/admin/academic-charts-section`) imediatamente após a grade de KPIs, com as quatro visualizações:
+  1. Composição do corpo discente (funil de retenção: Ativos, Pré-Matriculados, Trancados, Cancelados + índice de retenção líquida).
+  2. Taxa de ocupação por campus/polo MEC (capacidade vs. enturmações, vagas remanescentes).
+  3. Conciliação financeira de mensalidades Stripe (Liquidado/Pago, A Vencer, Inadimplência em Atraso).
+  4. Termômetro regulatório de curricularização da extensão (Resolução CNE/CES nº 7/2018, meta ≥ 10%), com marco visual da linha de corte.
+- Use o componente `Tabs` do shadcn/ui para o gestor focar a métrica desejada. **NUNCA** use `<button>` nativo no alternador.
+- **NUNCA** invente números, polos ou cursos. Derive tudo da API: `matriculasPorStatus` do dashboard, `GET` turmas + campi, `GET` faturas, `GET` matrizes + `auditoria-mec`.
+- Cores dos gráficos: apenas tokens do tema (`bg-success`, `bg-info`, `bg-warning`, `bg-primary`, `bg-chart-*`, `bg-destructive`). Sem `emerald-*` / `sky-*` / `amber-*` no admin.
+- O dashboard do professor **NÃO** inclui essa seção.
 - Antes de criar uma nova variável de cor, **SEMPRE** busque na documentação do shadcn/ui sobre theming e veja se realmente é necessário.
 - **SEMPRE** veja os componentes que podem ser reutilizados para construção de uma página em `@/components/ui/page.tsx`.
 
