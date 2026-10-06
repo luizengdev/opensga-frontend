@@ -29,6 +29,7 @@ import {
   deleteUser,
   enturmarAluno,
   fecharReclamacao,
+  fecharSemestre,
   getAlunos,
   getAuditoriaMec,
   getCampi,
@@ -74,6 +75,7 @@ import {
   type CreateProfessorInput,
   type CreateTurmaInput,
   type DashboardPeriodQuery,
+  type FecharSemestreInput,
   type LoginInput,
   type MeProfile,
   type ProfessorDashboard,
@@ -271,6 +273,8 @@ export const useEnturmarAluno = () =>
   });
 export const useAvaliarDiario = () =>
   useMutation({mutationFn: (data: UpdateGradesInput) => avaliarDiario(data)});
+export const useFecharSemestre = () =>
+  useMutation({mutationFn: (data: FecharSemestreInput) => fecharSemestre(data)});
 export const useDeleteDiario = () => useMutation({mutationFn: deleteDiario});
 
 export const getGetUsersQueryKey = () => ["/api/v1/users"] as const;

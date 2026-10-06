@@ -4,13 +4,16 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {useQueryClient} from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Calculator,
+  Calendar,
   Clock,
+  Edit3,
   GraduationCap,
   MapPin,
-  Pencil,
-  Trash2,
+  Percent,
+  Save,
   UserPlus,
-  Users,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
 import {useMemo, useState} from "react";
@@ -22,7 +25,14 @@ import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminSelect} from "@/components/admin/admin-select";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +44,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -54,8 +65,8 @@ import type {DiarioClasse, Matricula, Turma} from "@/lib/api/fetch-generated";
 import {
   getGetDiariosQueryKey,
   useAvaliarDiario,
-  useDeleteDiario,
   useEnturmarAluno,
+  useFecharSemestre,
   useGetDiarios,
   useGetTurma,
 } from "@/lib/api/rc-generated";
@@ -65,9 +76,9 @@ const enturmarSchema = z.object({
 });
 
 const avaliacaoSchema = z.object({
-  notaA1: z.string(),
-  notaA2: z.string(),
-  notaAF: z.string(),
+  notaAv: z.string(),
+  notaAvs: z.string(),
+  notaAv3: z.string(),
   totalFaltas: z.number().int().min(0),
 });
 
@@ -80,6 +91,21 @@ const parseNota = (value: string) => {
   }
 
   return Number(value.replace(",", "."));
+};
+
+const CH_TOTAL = 80;
+const LIMITE_FALTAS = Math.floor(CH_TOTAL * 0.25);
+
+const formatDiarioNota = (nota: number | null, accent = false) => {
+  if (nota === null) {
+    return <span className="italic text-muted-foreground">—</span>;
+  }
+
+  return (
+    <span className={accent ? "font-medium text-primary" : "font-medium"}>
+      {nota.toFixed(1)}
+    </span>
+  );
 };
 
 interface TurmaDetailViewProps {
@@ -103,7 +129,7 @@ export const TurmaDetailView = ({
   });
   const {mutate: enturmar, isPending: isEnturmando} = useEnturmarAluno();
   const {mutate: avaliar, isPending: isAvaliando} = useAvaliarDiario();
-  const {mutate: removerDiario, isPending: isRemovendo} = useDeleteDiario();
+  const {mutate: fechar, isPending: isFechando} = useFecharSemestre();
   const [enturmarOpen, setEnturmarOpen] = useState(false);
   const [avaliacaoOpen, setAvaliacaoOpen] = useState(false);
   const [diarioSelecionado, setDiarioSelecionado] = useState<DiarioClasse | null>(null);
@@ -111,6 +137,13 @@ export const TurmaDetailView = ({
   const atual = turma ?? initialTurma;
   const listaDiarios = diarios ?? initialDiarios;
   const listaMatriculas = initialMatriculas;
+  const emailPorMatricula = useMemo(
+    () =>
+      new Map(
+        listaMatriculas.map((matricula) => [matricula.id, matricula.aluno.user.email] as const),
+      ),
+    [listaMatriculas],
+  );
   const matriculasDisponiveis = listaMatriculas.filter(
     (matricula) =>
       matricula.status === "ATIVO" &&
@@ -124,54 +157,57 @@ export const TurmaDetailView = ({
 
   const avaliacaoForm = useForm<AvaliacaoFormValues>({
     resolver: zodResolver(avaliacaoSchema),
-    defaultValues: {notaA1: "", notaA2: "", notaAF: "", totalFaltas: 0},
+    defaultValues: {notaAv: "", notaAvs: "", notaAv3: "", totalFaltas: 0},
   });
 
   const notas = avaliacaoForm.watch();
   const preview = useMemo(() => {
-    const a1 = parseNota(notas.notaA1);
-    const a2 = parseNota(notas.notaA2);
-    const af = parseNota(notas.notaAF);
+    const av = parseNota(notas.notaAv);
+    const avs = parseNota(notas.notaAvs);
+    const av3 = parseNota(notas.notaAv3);
     const faltas = Number(notas.totalFaltas) || 0;
+    const avValida = av !== undefined && !Number.isNaN(av);
+    const avsValida = avs !== undefined && !Number.isNaN(avs);
 
-    if (a1 === undefined || a2 === undefined || Number.isNaN(a1) || Number.isNaN(a2)) {
-      return {ms: "—", mf: "—", status: "Lançamentos parciais"};
+    if (!avValida && !avsValida) {
+      return {ns: "—", mf: "—", habilitaAv3: false, status: "Lançamentos parciais"};
     }
 
-    const ms = a1 * 0.4 + a2 * 0.6;
+    const ns = Math.max(avValida ? av : Number.NEGATIVE_INFINITY, avsValida ? avs : Number.NEGATIVE_INFINITY);
 
-    if (faltas > 20) {
+    if (faltas > LIMITE_FALTAS) {
       return {
-        ms: ms.toFixed(1),
+        ns: ns.toFixed(1),
         mf: "—",
-        status: "Reprovado por frequência (faltas > 25%)",
+        habilitaAv3: false,
+        status: "Reprovado por frequência (faltas > 25%) no fechamento",
       };
     }
 
-    if (ms >= 6) {
+    if (ns >= 6) {
       return {
-        ms: ms.toFixed(1),
-        mf: ms.toFixed(1),
-        status: "Aprovado direto por média semestral (MS ≥ 6,0)",
+        ns: ns.toFixed(1),
+        mf: ns.toFixed(1),
+        habilitaAv3: false,
+        status: "Aprovado direto por nota semestral (NS ≥ 6,0)",
       };
     }
 
-    if (af === undefined || Number.isNaN(af)) {
+    if (av3 === undefined || Number.isNaN(av3)) {
       return {
-        ms: ms.toFixed(1),
-        mf: "Aguardando AF",
-        status: "Elegível para avaliação final (MS < 6,0)",
+        ns: ns.toFixed(1),
+        mf: "Aguardando AV3",
+        habilitaAv3: true,
+        status: "Elegível para AV3 (NS < 6,0)",
       };
     }
 
-    const mf = (ms + af) / 2;
+    const mf = (ns + av3) / 2;
     return {
-      ms: ms.toFixed(1),
+      ns: ns.toFixed(1),
       mf: mf.toFixed(1),
-      status:
-        mf >= 5
-          ? "Aprovado após exame final (MF ≥ 5,0)"
-          : "Reprovado em exame final (MF < 5,0)",
+      habilitaAv3: true,
+      status: mf >= 5 ? "Aprovado após AV3 (MF ≥ 5,0)" : "Reprovado por nota (MF < 5,0)",
     };
   }, [notas]);
 
@@ -184,9 +220,9 @@ export const TurmaDetailView = ({
   const openAvaliacao = (diario: DiarioClasse) => {
     setDiarioSelecionado(diario);
     avaliacaoForm.reset({
-      notaA1: diario.notaA1 === null ? "" : String(diario.notaA1),
-      notaA2: diario.notaA2 === null ? "" : String(diario.notaA2),
-      notaAF: diario.notaAF === null ? "" : String(diario.notaAF),
+      notaAv: diario.notaAv === null ? "" : String(diario.notaAv),
+      notaAvs: diario.notaAvs === null ? "" : String(diario.notaAvs),
+      notaAv3: diario.notaAv3 === null ? "" : String(diario.notaAv3),
       totalFaltas: diario.totalFaltas,
     });
     setAvaliacaoOpen(true);
@@ -214,9 +250,9 @@ export const TurmaDetailView = ({
     avaliar(
       {
         diarioClasseId: diarioSelecionado.id,
-        notaA1: parseNota(payload.notaA1),
-        notaA2: parseNota(payload.notaA2),
-        notaAF: parseNota(payload.notaAF),
+        notaAv: parseNota(payload.notaAv),
+        notaAvs: parseNota(payload.notaAvs),
+        ...(preview.habilitaAv3 ? {notaAv3: parseNota(payload.notaAv3)} : {}),
         totalFaltas: payload.totalFaltas,
       },
       {
@@ -229,6 +265,21 @@ export const TurmaDetailView = ({
       },
     );
   });
+
+  const semestreJaFechado = listaDiarios.length > 0 && listaDiarios.every((diario) => diario.semestreFechado);
+
+  const onFecharSemestre = () => {
+    fechar(
+      {turmaId: atual.id},
+      {
+        onSuccess: (resultado) => {
+          toast.success(`Semestre fechado: ${resultado.fechados} diários integralizados.`);
+          invalidate();
+        },
+        onError: (error) => toast.error(getMutationErrorMessage(error)),
+      },
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -254,12 +305,23 @@ export const TurmaDetailView = ({
             </h1>
           </div>
         </div>
-        {isAdmin ? (
-          <Button onClick={() => setEnturmarOpen(true)} size="sm">
-            <UserPlus />
-            Enturmar aluno
+        <div className="flex flex-wrap gap-2">
+          <Button
+            disabled={isFechando || listaDiarios.length === 0 || semestreJaFechado}
+            onClick={onFecharSemestre}
+            size="sm"
+            variant="outline"
+          >
+            <Lock />
+            {semestreJaFechado ? "Semestre fechado" : "Fechar semestre"}
           </Button>
-        ) : null}
+          {isAdmin ? (
+            <Button onClick={() => setEnturmarOpen(true)} size="sm">
+              <UserPlus />
+              Enturmar Aluno
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -267,7 +329,7 @@ export const TurmaDetailView = ({
           <CardContent>
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <GraduationCap className="size-3.5 text-primary" />
-              Professor titular
+              Professor Titular
             </span>
             <div className="mt-1 text-sm font-semibold">{atual.professor.user.nome}</div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">
@@ -279,11 +341,11 @@ export const TurmaDetailView = ({
           <CardContent>
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Clock className="size-3.5 text-primary" />
-              Horário semestral
+              Horário Semestral
             </span>
             <div className="mt-1 font-mono text-xs font-semibold">{atual.horario}</div>
             <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-              {atual.anoLetivo}.{atual.semestreLetivo}
+              Ano/Sem: {atual.anoLetivo}.{atual.semestreLetivo}
             </div>
           </CardContent>
         </Card>
@@ -291,103 +353,150 @@ export const TurmaDetailView = ({
           <CardContent>
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <MapPin className="size-3.5 text-primary" />
-              Local
+              Local / Sala / Link
             </span>
-            <div className="mt-1 text-sm font-semibold">{atual.salaOuLink || "A definir"}</div>
+            <div className="mt-1 truncate text-xs font-medium">{atual.salaOuLink || "Sala padrão"}</div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              Carga Horária: {CH_TOTAL}h (Máx {LIMITE_FALTAS} faltas)
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Users className="size-3.5 text-primary" />
-              Ocupação
+              <Percent className="size-3.5 text-primary" />
+              Vagas Ofertadas
             </span>
-            <div className="mt-1 font-mono text-sm font-semibold tabular-nums">
-              {listaDiarios.length}/{atual.capacidade}
+            <div className="mt-1 font-mono text-sm font-bold tabular-nums">
+              {listaDiarios.length} / {atual.capacidade} alunos
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              {atual.capacidade - listaDiarios.length} vagas remanescentes
             </div>
           </CardContent>
         </Card>
       </div>
 
+      <div className="flex flex-col items-start justify-between gap-4 rounded-[var(--radius)] border border-border bg-muted/40 p-4 text-xs md:flex-row md:items-center">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <Calculator className="size-4 text-primary" />
+            <span>Regulamento Geral de Avaliação e Integralização MEC</span>
+          </div>
+          <p className="text-muted-foreground">
+            Nota Semestral:{" "}
+            <strong className="font-mono text-foreground">MAX(AV, AVS)</strong>. Aprovação
+            Direta se NS ≥ 6,0 e Faltas ≤ 25%. Em caso de AV3:{" "}
+            <strong className="font-mono text-foreground">MF = (NS + AV3) / 2</strong> (Aprovado se MF ≥
+            5,0). RF ignora notas.
+          </p>
+        </div>
+        <span className="shrink-0 rounded border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground">
+          CH: {CH_TOTAL}h · Limite Faltas: {LIMITE_FALTAS}h
+        </span>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Diário de classe</CardTitle>
+          <CardTitle>Diário de Classe Eletrônico</CardTitle>
           <CardDescription>
-            Lançamento de A1, A2, AF e faltas. MS = (A1 × 0,4) + (A2 × 0,6).
+            Lançamento e consolidação de AV, AVS, AV3 e cômputo de faltas.
           </CardDescription>
+          <CardAction>
+            <span className="font-mono text-xs text-muted-foreground">
+              {listaDiarios.length} diários ativos
+            </span>
+          </CardAction>
         </CardHeader>
         <CardContent>
           {listaDiarios.length === 0 ? (
             <AdminEmptyState
-              description="Enturme matrículas ativas para iniciar o diário eletrônico."
-              icon={Users}
+              description="Esta turma ainda não possui discentes vinculados ao diário eletrônico."
+              icon={Calendar}
               title="Nenhum aluno enturmado"
             />
           ) : (
-            <Table>
-              <TableHeader>
+            <Table className="text-xs">
+              <TableHeader className="bg-muted/30 text-[10px] font-medium tracking-wider uppercase">
                 <TableRow>
-                  <TableHead>RA</TableHead>
-                  <TableHead>Aluno</TableHead>
-                  <TableHead>A1</TableHead>
-                  <TableHead>A2</TableHead>
-                  <TableHead>AF</TableHead>
-                  <TableHead>Final</TableHead>
-                  <TableHead>Faltas</TableHead>
-                  <TableHead>Situação</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-muted-foreground">RA</TableHead>
+                  <TableHead className="text-muted-foreground">Aluno</TableHead>
+                  <TableHead className="text-center text-muted-foreground">AV</TableHead>
+                  <TableHead className="text-center text-muted-foreground">AVS</TableHead>
+                  <TableHead className="text-center text-muted-foreground">AV3</TableHead>
+                  <TableHead className="text-center text-muted-foreground">NS</TableHead>
+                  <TableHead className="text-center text-muted-foreground">Faltas (CH)</TableHead>
+                  <TableHead className="text-center text-muted-foreground">Média Final</TableHead>
+                  <TableHead className="text-center text-muted-foreground">Resultado</TableHead>
+                  <TableHead className="text-right text-muted-foreground">Lançamento</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {listaDiarios.map((diario) => (
-                  <TableRow key={diario.id}>
-                    <TableCell className="font-mono">{diario.aluno.ra}</TableCell>
-                    <TableCell>{diario.aluno.nome}</TableCell>
-                    <TableCell className="font-mono">{diario.notaA1 ?? "—"}</TableCell>
-                    <TableCell className="font-mono">{diario.notaA2 ?? "—"}</TableCell>
-                    <TableCell className="font-mono">{diario.notaAF ?? "—"}</TableCell>
-                    <TableCell className="font-mono">{diario.notaFinal ?? "—"}</TableCell>
-                    <TableCell className="font-mono">{diario.totalFaltas}</TableCell>
-                    <TableCell>
-                      {diario.aprovado === null ? (
-                        <Badge variant="outline">Em avaliação</Badge>
-                      ) : diario.aprovado ? (
-                        <Badge>Aprovado</Badge>
-                      ) : (
-                        <Badge variant="destructive">Reprovado</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        aria-label={`Lançar notas de ${diario.aluno.nome}`}
-                        onClick={() => openAvaliacao(diario)}
-                        size="icon-sm"
-                        variant="ghost"
-                      >
-                        <Pencil />
-                      </Button>
-                      {isAdmin ? (
-                        <Button
-                          aria-label={`Remover ${diario.aluno.nome} do diário`}
-                          disabled={isRemovendo}
-                          onClick={() =>
-                            removerDiario(diario.id, {
-                              onSuccess: () => {
-                                toast.success("Aluno removido do diário.");
-                                invalidate();
-                              },
-                              onError: (error) => toast.error(getMutationErrorMessage(error)),
-                            })
+                {listaDiarios.map((diario) => {
+                  const reprovadoPorFalta = diario.totalFaltas > LIMITE_FALTAS;
+                  const email = emailPorMatricula.get(diario.matriculaId);
+
+                  return (
+                    <TableRow key={diario.id}>
+                      <TableCell className="font-mono font-medium">{diario.aluno.ra}</TableCell>
+                      <TableCell className="whitespace-normal">
+                        <div className="font-semibold">{diario.aluno.nome}</div>
+                        {email ? (
+                          <div className="font-mono text-[10px] text-muted-foreground">{email}</div>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-center font-mono tabular-nums">
+                        {formatDiarioNota(diario.notaAv)}
+                      </TableCell>
+                      <TableCell className="text-center font-mono tabular-nums">
+                        {formatDiarioNota(diario.notaAvs)}
+                      </TableCell>
+                      <TableCell className="text-center font-mono tabular-nums">
+                        {formatDiarioNota(diario.notaAv3, true)}
+                      </TableCell>
+                      <TableCell className="text-center font-mono font-bold tabular-nums">
+                        {diario.notaSemestral === null ? "—" : diario.notaSemestral.toFixed(1)}
+                      </TableCell>
+                      <TableCell className="text-center font-mono tabular-nums">
+                        <span
+                          className={
+                            reprovadoPorFalta ? "font-bold text-destructive" : "text-foreground"
                           }
-                          size="icon-sm"
-                          variant="ghost"
                         >
-                          <Trash2 />
+                          {diario.totalFaltas}h
+                        </span>
+                        <span className="text-[10px] text-muted-foreground"> / {LIMITE_FALTAS}h</span>
+                      </TableCell>
+                      <TableCell className="text-center font-mono font-bold tabular-nums">
+                        {diario.mediaFinal === null ? "—" : diario.mediaFinal.toFixed(1)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {diario.statusDisciplina === "RF" || reprovadoPorFalta ? (
+                          <Badge variant="destructive">RF</Badge>
+                        ) : diario.statusDisciplina === "APROVADO" ? (
+                          <Badge variant="success">Aprovado</Badge>
+                        ) : diario.statusDisciplina === "RN" ? (
+                          <Badge variant="destructive">RN</Badge>
+                        ) : diario.habilitaAv3 ? (
+                          <Badge variant="warning">AV3</Badge>
+                        ) : (
+                          <Badge variant="warning">Em Aberto</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          disabled={diario.semestreFechado}
+                          onClick={() => openAvaliacao(diario)}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <Edit3 className="text-primary" />
+                          Lançar
                         </Button>
-                      ) : null}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -397,8 +506,10 @@ export const TurmaDetailView = ({
       <Dialog onOpenChange={setEnturmarOpen} open={enturmarOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enturmar aluno</DialogTitle>
-            <DialogDescription>Vincule uma matrícula ativa a esta turma.</DialogDescription>
+            <DialogTitle>Enturmar Aluno na Disciplina</DialogTitle>
+            <DialogDescription>
+              Vincular matrícula ativa da matriz curricular à turma {atual.codigo}
+            </DialogDescription>
           </DialogHeader>
           <Form {...enturmarForm}>
             <form className="space-y-4" onSubmit={onEnturmar}>
@@ -407,15 +518,15 @@ export const TurmaDetailView = ({
                 name="matriculaId"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel>Matrícula</FormLabel>
+                    <FormLabel>Selecione o Aluno (Matrícula Ativa)</FormLabel>
                     <FormControl>
                       <AdminSelect
                         items={matriculasDisponiveis.map((matricula) => ({
                           value: matricula.id,
-                          label: `${matricula.aluno.ra} · ${matricula.aluno.user.nome}`,
+                          label: `${matricula.aluno.ra} - ${matricula.aluno.user.nome} (${matricula.curso.nome})`,
                         }))}
                         onValueChange={field.onChange}
-                        placeholder="Selecione o RA"
+                        placeholder="Selecione um aluno cadastrado..."
                         value={field.value}
                       />
                     </FormControl>
@@ -423,12 +534,16 @@ export const TurmaDetailView = ({
                   </FormItem>
                 )}
               />
+              <p className="rounded-[calc(var(--radius)-4px)] border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
+                A enturmação criará automaticamente o diário eletrônico para cômputo de AV, AVS, AV3 e
+                frequência.
+              </p>
               <DialogFooter>
                 <Button onClick={() => setEnturmarOpen(false)} type="button" variant="outline">
                   Cancelar
                 </Button>
                 <Button disabled={isEnturmando} type="submit">
-                  Enturmar
+                  Efetivar Enturmação
                 </Button>
               </DialogFooter>
             </form>
@@ -439,89 +554,120 @@ export const TurmaDetailView = ({
       <Dialog onOpenChange={setAvaliacaoOpen} open={avaliacaoOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Lançar notas</DialogTitle>
+            <DialogTitle>
+              {diarioSelecionado
+                ? `Lançamento Acadêmico: ${diarioSelecionado.aluno.nome}`
+                : "Lançamento Acadêmico"}
+            </DialogTitle>
             <DialogDescription>
               {diarioSelecionado
-                ? `${diarioSelecionado.aluno.ra} · ${diarioSelecionado.aluno.nome}`
+                ? `RA: ${diarioSelecionado.aluno.ra} · Turma: ${atual.codigo} · Carga: ${CH_TOTAL}h`
                 : "Avaliação"}
             </DialogDescription>
           </DialogHeader>
           <Form {...avaliacaoForm}>
             <form className="space-y-4" onSubmit={onAvaliar}>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <FormField
                   control={avaliacaoForm.control}
-                  name="notaA1"
+                  name="notaAv"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>A1</FormLabel>
+                      <FormLabel>AV (0 a 10)</FormLabel>
                       <FormControl>
-                        <Input inputMode="decimal" placeholder="0-10" {...field} />
+                        <Input inputMode="decimal" placeholder="Ex: 8.5" step="0.1" {...field} />
                       </FormControl>
+                      <FormDescription className="text-[11px]">Avaliação regular</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={avaliacaoForm.control}
-                  name="notaA2"
+                  name="notaAvs"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>A2</FormLabel>
+                      <FormLabel>AVS (0 a 10)</FormLabel>
                       <FormControl>
-                        <Input inputMode="decimal" placeholder="0-10" {...field} />
+                        <Input inputMode="decimal" placeholder="Ex: 7.0" step="0.1" {...field} />
                       </FormControl>
+                      <FormDescription className="text-[11px]">Substitutiva · NS = MAX(AV, AVS)</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={avaliacaoForm.control}
-                  name="notaAF"
+                  name="notaAv3"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>AF</FormLabel>
+                      <FormLabel>AV3 (0 a 10)</FormLabel>
                       <FormControl>
-                        <Input inputMode="decimal" placeholder="0-10" {...field} />
+                        <Input
+                          disabled={!preview.habilitaAv3}
+                          inputMode="decimal"
+                          placeholder="Ex: 6.0"
+                          step="0.1"
+                          {...field}
+                        />
                       </FormControl>
+                      <FormDescription className="text-[11px]">
+                        {preview.habilitaAv3 ? "Recuperação final · NS < 6,0" : "Habilitada só se NS < 6,0"}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              <FormField
-                control={avaliacaoForm.control}
-                name="totalFaltas"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Total de faltas</FormLabel>
-                    <FormControl>
-                      <Input
-                        min={0}
-                        onBlur={field.onBlur}
-                        onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                        ref={field.ref}
-                        type="number"
-                        value={field.value}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-muted/40 p-3 text-xs">
-                <p>
-                  MS: <span className="font-mono font-semibold">{preview.ms}</span> · MF:{" "}
-                  <span className="font-mono font-semibold">{preview.mf}</span>
-                </p>
-                <p className="mt-1 text-muted-foreground">{preview.status}</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <FormField
+                  control={avaliacaoForm.control}
+                  name="totalFaltas"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>Total de Faltas (Horas)</FormLabel>
+                      <FormControl>
+                        <Input
+                          max={CH_TOTAL}
+                          min={0}
+                          onBlur={field.onBlur}
+                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                          ref={field.ref}
+                          type="number"
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-[11px]">
+                        Limite legal: {LIMITE_FALTAS} horas (25% de {CH_TOTAL}h)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex flex-col justify-center rounded-[calc(var(--radius)-4px)] border border-border bg-muted/60 p-2.5 text-xs">
+                  <span className="block text-[11px] font-semibold text-foreground">
+                    Cálculo em Tempo Real:
+                  </span>
+                  <div className="mt-0.5 flex items-center gap-3 font-mono text-[11px] text-foreground">
+                    <span>
+                      NS: <strong>{preview.ns}</strong>
+                    </span>
+                    <span>
+                      MF: <strong>{preview.mf}</strong>
+                    </span>
+                  </div>
+                  <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                    {preview.status}
+                  </span>
+                </div>
               </div>
               <DialogFooter>
                 <Button onClick={() => setAvaliacaoOpen(false)} type="button" variant="outline">
                   Cancelar
                 </Button>
                 <Button disabled={isAvaliando} type="submit">
-                  Salvar lançamento
+                  <Save />
+                  Consolidar Lançamento
                 </Button>
               </DialogFooter>
             </form>

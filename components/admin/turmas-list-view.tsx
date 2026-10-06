@@ -12,6 +12,7 @@ import {z} from "zod";
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {ConflictDialog} from "@/components/admin/conflict-dialog";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
@@ -42,7 +43,11 @@ import {
 } from "@/components/ui/table";
 import {formatPeriodoLetivo} from "@/lib/academic/periodo-letivo";
 import {TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
-import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
+import {
+  buildTurmaRestrictMessage,
+  getMutationErrorMessage,
+  isConflictError,
+} from "@/lib/admin/mutation-error";
 import type {Campus, Disciplina, Professor, TipoEntrega, Turma} from "@/lib/api/fetch-generated";
 import {
   getGetTurmasQueryKey,
@@ -97,6 +102,7 @@ export const TurmasListView = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [campusFilter, setCampusFilter] = useState("ALL");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [conflict, setConflict] = useState<{entityName: string; message: string} | null>(null);
 
   const lista = turmas ?? initialTurmas;
   const listaCampi = initialCampi;
@@ -252,15 +258,35 @@ export const TurmasListView = ({
                         <Button
                           aria-label={`Excluir turma ${turma.codigo}`}
                           disabled={isDeleting}
-                          onClick={() =>
+                          onClick={() => {
+                            const quantidadeDiarios = turma.quantidadeDiarios ?? 0;
+
+                            if (quantidadeDiarios > 0) {
+                              setConflict({
+                                entityName: `Turma ${turma.codigo}`,
+                                message: buildTurmaRestrictMessage(quantidadeDiarios),
+                              });
+                              return;
+                            }
+
                             deleteTurma(turma.id, {
                               onSuccess: () => {
                                 toast.success("Turma removida.");
                                 invalidate();
                               },
-                              onError: (error) => toast.error(getMutationErrorMessage(error)),
-                            })
-                          }
+                              onError: (error) => {
+                                if (isConflictError(error)) {
+                                  setConflict({
+                                    entityName: `Turma ${turma.codigo}`,
+                                    message: getMutationErrorMessage(error),
+                                  });
+                                  return;
+                                }
+
+                                toast.error(getMutationErrorMessage(error));
+                              },
+                            });
+                          }}
                           size="icon-sm"
                           variant="ghost"
                         >
@@ -275,6 +301,17 @@ export const TurmasListView = ({
           )}
         </CardContent>
       </Card>
+
+      <ConflictDialog
+        dependencyMessage={conflict?.message ?? ""}
+        entityName={conflict?.entityName ?? ""}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConflict(null);
+          }
+        }}
+        open={conflict !== null}
+      />
 
       <Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
         <DialogContent className="sm:max-w-lg">
