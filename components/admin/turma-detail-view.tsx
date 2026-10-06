@@ -13,6 +13,7 @@ import {
   Percent,
   Save,
   UserPlus,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
 import {useMemo, useState} from "react";
@@ -65,6 +66,7 @@ import {
   getGetDiariosQueryKey,
   useAvaliarDiario,
   useEnturmarAluno,
+  useFecharSemestre,
   useGetDiarios,
   useGetTurma,
 } from "@/lib/api/rc-generated";
@@ -74,9 +76,9 @@ const enturmarSchema = z.object({
 });
 
 const avaliacaoSchema = z.object({
-  notaA1: z.string(),
-  notaA2: z.string(),
-  notaAF: z.string(),
+  notaAv: z.string(),
+  notaAvs: z.string(),
+  notaAv3: z.string(),
   totalFaltas: z.number().int().min(0),
 });
 
@@ -127,6 +129,7 @@ export const TurmaDetailView = ({
   });
   const {mutate: enturmar, isPending: isEnturmando} = useEnturmarAluno();
   const {mutate: avaliar, isPending: isAvaliando} = useAvaliarDiario();
+  const {mutate: fechar, isPending: isFechando} = useFecharSemestre();
   const [enturmarOpen, setEnturmarOpen] = useState(false);
   const [avaliacaoOpen, setAvaliacaoOpen] = useState(false);
   const [diarioSelecionado, setDiarioSelecionado] = useState<DiarioClasse | null>(null);
@@ -154,54 +157,57 @@ export const TurmaDetailView = ({
 
   const avaliacaoForm = useForm<AvaliacaoFormValues>({
     resolver: zodResolver(avaliacaoSchema),
-    defaultValues: {notaA1: "", notaA2: "", notaAF: "", totalFaltas: 0},
+    defaultValues: {notaAv: "", notaAvs: "", notaAv3: "", totalFaltas: 0},
   });
 
   const notas = avaliacaoForm.watch();
   const preview = useMemo(() => {
-    const a1 = parseNota(notas.notaA1);
-    const a2 = parseNota(notas.notaA2);
-    const af = parseNota(notas.notaAF);
+    const av = parseNota(notas.notaAv);
+    const avs = parseNota(notas.notaAvs);
+    const av3 = parseNota(notas.notaAv3);
     const faltas = Number(notas.totalFaltas) || 0;
+    const avValida = av !== undefined && !Number.isNaN(av);
+    const avsValida = avs !== undefined && !Number.isNaN(avs);
 
-    if (a1 === undefined || a2 === undefined || Number.isNaN(a1) || Number.isNaN(a2)) {
-      return {ms: "—", mf: "—", status: "Lançamentos parciais"};
+    if (!avValida && !avsValida) {
+      return {ns: "—", mf: "—", habilitaAv3: false, status: "Lançamentos parciais"};
     }
 
-    const ms = a1 * 0.4 + a2 * 0.6;
+    const ns = Math.max(avValida ? av : Number.NEGATIVE_INFINITY, avsValida ? avs : Number.NEGATIVE_INFINITY);
 
     if (faltas > LIMITE_FALTAS) {
       return {
-        ms: ms.toFixed(1),
+        ns: ns.toFixed(1),
         mf: "—",
-        status: "Reprovado por frequência (faltas > 25%)",
+        habilitaAv3: false,
+        status: "Reprovado por frequência (faltas > 25%) no fechamento",
       };
     }
 
-    if (ms >= 6) {
+    if (ns >= 6) {
       return {
-        ms: ms.toFixed(1),
-        mf: ms.toFixed(1),
-        status: "Aprovado direto por média semestral (MS ≥ 6,0)",
+        ns: ns.toFixed(1),
+        mf: ns.toFixed(1),
+        habilitaAv3: false,
+        status: "Aprovado direto por nota semestral (NS ≥ 6,0)",
       };
     }
 
-    if (af === undefined || Number.isNaN(af)) {
+    if (av3 === undefined || Number.isNaN(av3)) {
       return {
-        ms: ms.toFixed(1),
-        mf: "Aguardando AF",
-        status: "Elegível para avaliação final (MS < 6,0)",
+        ns: ns.toFixed(1),
+        mf: "Aguardando AV3",
+        habilitaAv3: true,
+        status: "Elegível para AV3 (NS < 6,0)",
       };
     }
 
-    const mf = (ms + af) / 2;
+    const mf = (ns + av3) / 2;
     return {
-      ms: ms.toFixed(1),
+      ns: ns.toFixed(1),
       mf: mf.toFixed(1),
-      status:
-        mf >= 5
-          ? "Aprovado após exame final (MF ≥ 5,0)"
-          : "Reprovado em exame final (MF < 5,0)",
+      habilitaAv3: true,
+      status: mf >= 5 ? "Aprovado após AV3 (MF ≥ 5,0)" : "Reprovado por nota (MF < 5,0)",
     };
   }, [notas]);
 
@@ -214,9 +220,9 @@ export const TurmaDetailView = ({
   const openAvaliacao = (diario: DiarioClasse) => {
     setDiarioSelecionado(diario);
     avaliacaoForm.reset({
-      notaA1: diario.notaA1 === null ? "" : String(diario.notaA1),
-      notaA2: diario.notaA2 === null ? "" : String(diario.notaA2),
-      notaAF: diario.notaAF === null ? "" : String(diario.notaAF),
+      notaAv: diario.notaAv === null ? "" : String(diario.notaAv),
+      notaAvs: diario.notaAvs === null ? "" : String(diario.notaAvs),
+      notaAv3: diario.notaAv3 === null ? "" : String(diario.notaAv3),
       totalFaltas: diario.totalFaltas,
     });
     setAvaliacaoOpen(true);
@@ -244,9 +250,9 @@ export const TurmaDetailView = ({
     avaliar(
       {
         diarioClasseId: diarioSelecionado.id,
-        notaA1: parseNota(payload.notaA1),
-        notaA2: parseNota(payload.notaA2),
-        notaAF: parseNota(payload.notaAF),
+        notaAv: parseNota(payload.notaAv),
+        notaAvs: parseNota(payload.notaAvs),
+        ...(preview.habilitaAv3 ? {notaAv3: parseNota(payload.notaAv3)} : {}),
         totalFaltas: payload.totalFaltas,
       },
       {
@@ -259,6 +265,21 @@ export const TurmaDetailView = ({
       },
     );
   });
+
+  const semestreJaFechado = listaDiarios.length > 0 && listaDiarios.every((diario) => diario.semestreFechado);
+
+  const onFecharSemestre = () => {
+    fechar(
+      {turmaId: atual.id},
+      {
+        onSuccess: (resultado) => {
+          toast.success(`Semestre fechado: ${resultado.fechados} diários integralizados.`);
+          invalidate();
+        },
+        onError: (error) => toast.error(getMutationErrorMessage(error)),
+      },
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -284,12 +305,23 @@ export const TurmaDetailView = ({
             </h1>
           </div>
         </div>
-        {isAdmin ? (
-          <Button onClick={() => setEnturmarOpen(true)} size="sm">
-            <UserPlus />
-            Enturmar Aluno
+        <div className="flex flex-wrap gap-2">
+          <Button
+            disabled={isFechando || listaDiarios.length === 0 || semestreJaFechado}
+            onClick={onFecharSemestre}
+            size="sm"
+            variant="outline"
+          >
+            <Lock />
+            {semestreJaFechado ? "Semestre fechado" : "Fechar semestre"}
           </Button>
-        ) : null}
+          {isAdmin ? (
+            <Button onClick={() => setEnturmarOpen(true)} size="sm">
+              <UserPlus />
+              Enturmar Aluno
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -352,11 +384,11 @@ export const TurmaDetailView = ({
             <span>Regulamento Geral de Avaliação e Integralização MEC</span>
           </div>
           <p className="text-muted-foreground">
-            Média Semestral:{" "}
-            <strong className="font-mono text-foreground">(A1 × 0,4) + (A2 × 0,6)</strong>. Aprovação
-            Direta se MS ≥ 6,0 e Faltas ≤ 25%. Em caso de Exame Final:{" "}
-            <strong className="font-mono text-foreground">MF = (MS + AF) / 2</strong> (Aprovado se MF ≥
-            5,0).
+            Nota Semestral:{" "}
+            <strong className="font-mono text-foreground">MAX(AV, AVS)</strong>. Aprovação
+            Direta se NS ≥ 6,0 e Faltas ≤ 25%. Em caso de AV3:{" "}
+            <strong className="font-mono text-foreground">MF = (NS + AV3) / 2</strong> (Aprovado se MF ≥
+            5,0). RF ignora notas.
           </p>
         </div>
         <span className="shrink-0 rounded border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground">
@@ -368,7 +400,7 @@ export const TurmaDetailView = ({
         <CardHeader>
           <CardTitle>Diário de Classe Eletrônico</CardTitle>
           <CardDescription>
-            Lançamento e consolidação de notas A1, A2, Avaliação Final (AF) e cômputo de faltas.
+            Lançamento e consolidação de AV, AVS, AV3 e cômputo de faltas.
           </CardDescription>
           <CardAction>
             <span className="font-mono text-xs text-muted-foreground">
@@ -389,9 +421,10 @@ export const TurmaDetailView = ({
                 <TableRow>
                   <TableHead className="text-muted-foreground">RA</TableHead>
                   <TableHead className="text-muted-foreground">Aluno</TableHead>
-                  <TableHead className="text-center text-muted-foreground">A1 (40%)</TableHead>
-                  <TableHead className="text-center text-muted-foreground">A2 (60%)</TableHead>
-                  <TableHead className="text-center text-muted-foreground">AF</TableHead>
+                  <TableHead className="text-center text-muted-foreground">AV</TableHead>
+                  <TableHead className="text-center text-muted-foreground">AVS</TableHead>
+                  <TableHead className="text-center text-muted-foreground">AV3</TableHead>
+                  <TableHead className="text-center text-muted-foreground">NS</TableHead>
                   <TableHead className="text-center text-muted-foreground">Faltas (CH)</TableHead>
                   <TableHead className="text-center text-muted-foreground">Média Final</TableHead>
                   <TableHead className="text-center text-muted-foreground">Resultado</TableHead>
@@ -413,13 +446,16 @@ export const TurmaDetailView = ({
                         ) : null}
                       </TableCell>
                       <TableCell className="text-center font-mono tabular-nums">
-                        {formatDiarioNota(diario.notaA1)}
+                        {formatDiarioNota(diario.notaAv)}
                       </TableCell>
                       <TableCell className="text-center font-mono tabular-nums">
-                        {formatDiarioNota(diario.notaA2)}
+                        {formatDiarioNota(diario.notaAvs)}
                       </TableCell>
                       <TableCell className="text-center font-mono tabular-nums">
-                        {formatDiarioNota(diario.notaAF, true)}
+                        {formatDiarioNota(diario.notaAv3, true)}
+                      </TableCell>
+                      <TableCell className="text-center font-mono font-bold tabular-nums">
+                        {diario.notaSemestral === null ? "—" : diario.notaSemestral.toFixed(1)}
                       </TableCell>
                       <TableCell className="text-center font-mono tabular-nums">
                         <span
@@ -432,21 +468,24 @@ export const TurmaDetailView = ({
                         <span className="text-[10px] text-muted-foreground"> / {LIMITE_FALTAS}h</span>
                       </TableCell>
                       <TableCell className="text-center font-mono font-bold tabular-nums">
-                        {diario.notaFinal === null ? "—" : diario.notaFinal.toFixed(1)}
+                        {diario.mediaFinal === null ? "—" : diario.mediaFinal.toFixed(1)}
                       </TableCell>
                       <TableCell className="text-center">
-                        {reprovadoPorFalta ? (
-                          <Badge variant="destructive">Reprovado / Falta</Badge>
-                        ) : diario.aprovado === true ? (
+                        {diario.statusDisciplina === "RF" || reprovadoPorFalta ? (
+                          <Badge variant="destructive">RF</Badge>
+                        ) : diario.statusDisciplina === "APROVADO" ? (
                           <Badge variant="success">Aprovado</Badge>
-                        ) : diario.aprovado === false ? (
-                          <Badge variant="destructive">Reprovado</Badge>
+                        ) : diario.statusDisciplina === "RN" ? (
+                          <Badge variant="destructive">RN</Badge>
+                        ) : diario.habilitaAv3 ? (
+                          <Badge variant="warning">AV3</Badge>
                         ) : (
                           <Badge variant="warning">Em Aberto</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
+                          disabled={diario.semestreFechado}
                           onClick={() => openAvaliacao(diario)}
                           size="sm"
                           variant="outline"
@@ -496,7 +535,7 @@ export const TurmaDetailView = ({
                 )}
               />
               <p className="rounded-[calc(var(--radius)-4px)] border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
-                A enturmação criará automaticamente o diário eletrônico para cômputo de notas A1/A2 e
+                A enturmação criará automaticamente o diário eletrônico para cômputo de AV, AVS, AV3 e
                 frequência.
               </p>
               <DialogFooter>
@@ -531,46 +570,50 @@ export const TurmaDetailView = ({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <FormField
                   control={avaliacaoForm.control}
-                  name="notaA1"
+                  name="notaAv"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>Nota A1 (0 a 10)</FormLabel>
+                      <FormLabel>AV (0 a 10)</FormLabel>
                       <FormControl>
                         <Input inputMode="decimal" placeholder="Ex: 8.5" step="0.1" {...field} />
                       </FormControl>
-                      <FormDescription className="text-[11px]">
-                        Peso 40% na Média Semestral
-                      </FormDescription>
+                      <FormDescription className="text-[11px]">Avaliação regular</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={avaliacaoForm.control}
-                  name="notaA2"
+                  name="notaAvs"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>Nota A2 (0 a 10)</FormLabel>
+                      <FormLabel>AVS (0 a 10)</FormLabel>
                       <FormControl>
                         <Input inputMode="decimal" placeholder="Ex: 7.0" step="0.1" {...field} />
                       </FormControl>
-                      <FormDescription className="text-[11px]">
-                        Peso 60% na Média Semestral
-                      </FormDescription>
+                      <FormDescription className="text-[11px]">Substitutiva · NS = MAX(AV, AVS)</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={avaliacaoForm.control}
-                  name="notaAF"
+                  name="notaAv3"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>Exame Final - AF (0 a 10)</FormLabel>
+                      <FormLabel>AV3 (0 a 10)</FormLabel>
                       <FormControl>
-                        <Input inputMode="decimal" placeholder="Ex: 6.0" step="0.1" {...field} />
+                        <Input
+                          disabled={!preview.habilitaAv3}
+                          inputMode="decimal"
+                          placeholder="Ex: 6.0"
+                          step="0.1"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormDescription className="text-[11px]">Apenas se MS {'<'} 6,0</FormDescription>
+                      <FormDescription className="text-[11px]">
+                        {preview.habilitaAv3 ? "Recuperação final · NS < 6,0" : "Habilitada só se NS < 6,0"}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -607,7 +650,7 @@ export const TurmaDetailView = ({
                   </span>
                   <div className="mt-0.5 flex items-center gap-3 font-mono text-[11px] text-foreground">
                     <span>
-                      MS: <strong>{preview.ms}</strong>
+                      NS: <strong>{preview.ns}</strong>
                     </span>
                     <span>
                       MF: <strong>{preview.mf}</strong>

@@ -25,6 +25,8 @@ import type {
   DiarioClasse,
   Disciplina,
   Fatura,
+  FecharSemestreInput,
+  FecharSemestreResponse,
   Matricula,
   Matriz,
   MatrizDetail,
@@ -122,6 +124,11 @@ export const enturmarAluno = async (data: {matriculaId: string; turmaId: string}
   requestApi("/api/v1/diario/enturmar", {method: "POST", body: JSON.stringify(data)});
 export const avaliarDiario = async (data: UpdateGradesInput) =>
   requestApi("/api/v1/diario/avaliar", {method: "PATCH", body: JSON.stringify(data)});
+export const fecharSemestre = async (data: FecharSemestreInput) =>
+  requestApi<FecharSemestreResponse>("/api/v1/diario/fechar-semestre", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 export const deleteDiario = async (id: string) =>
   requestApi<DeleteResponse>(`/api/v1/diario/${id}`, {method: "DELETE"});
 

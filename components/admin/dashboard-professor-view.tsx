@@ -55,8 +55,8 @@ export const DashboardProfessorView = ({
   const painel = dashboard ?? initialDashboard;
   const minhasTurmas = turmas ?? initialTurmas;
   const meusDiarios = diarios ?? initialDiarios;
-  const pendenciasA1 = meusDiarios.filter((diario) => diario.notaA1 === null).length;
-  const pendenciasA2 = meusDiarios.filter((diario) => diario.notaA2 === null).length;
+  const pendenciasNs = meusDiarios.filter((diario) => diario.notaSemestral === null).length;
+  const pendenciasAv3 = meusDiarios.filter((diario) => diario.habilitaAv3 && diario.notaAv3 === null).length;
   const periodoLabel = formatPeriodoLetivo(periodo);
 
   return (
@@ -80,19 +80,19 @@ export const DashboardProfessorView = ({
         </div>
         <div className="grid grid-cols-1 gap-3 pt-1 text-muted-foreground md:grid-cols-3">
           <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-card p-2.5">
-            <span className="mb-0.5 block font-semibold text-foreground">Média semestral (MS)</span>
+            <span className="mb-0.5 block font-semibold text-foreground">Nota semestral (NS)</span>
             <code className="font-mono text-[11px] font-semibold text-primary">
-              MS = (A1 × 0,4) + (A2 × 0,6)
+              NS = MAX(AV, AVS)
             </code>
           </div>
           <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-card p-2.5">
             <span className="mb-0.5 block font-semibold text-foreground">Aprovação direta</span>
-            MS ≥ 6,0 e frequência ≥ 75% (faltas ≤ 25% da CH)
+            NS ≥ 6,0 e frequência ≥ 75% (faltas ≤ 25% da CH)
           </div>
           <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-card p-2.5">
-            <span className="mb-0.5 block font-semibold text-foreground">Avaliação final (AF)</span>
-            Se MS &lt; 6,0:{" "}
-            <code className="font-mono font-semibold text-primary">MF = (MS + AF) / 2</code>{" "}
+            <span className="mb-0.5 block font-semibold text-foreground">AV3</span>
+            Se NS &lt; 6,0:{" "}
+            <code className="font-mono font-semibold text-primary">MF = (NS + AV3) / 2</code>{" "}
             (aprovado se MF ≥ 5,0)
           </div>
         </div>
@@ -131,7 +131,7 @@ export const DashboardProfessorView = ({
               {painel.lancamentosPendentes}
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              {pendenciasA1} pendentes em A1 · {pendenciasA2} pendentes em A2
+              {pendenciasNs} sem NS · {pendenciasAv3} aguardando AV3
             </p>
           </CardContent>
         </Card>
@@ -141,7 +141,7 @@ export const DashboardProfessorView = ({
         <CardHeader>
           <CardTitle>Minhas turmas e diários de classe</CardTitle>
           <CardDescription>
-            Acesse o diário para lançar avaliações A1, A2, AF e registrar o total de faltas.
+            Acesse o diário para lançar AV, AVS, AV3 e registrar o total de faltas.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -156,7 +156,7 @@ export const DashboardProfessorView = ({
               {minhasTurmas.map((turma) => {
                 const turmaDiarios = meusDiarios.filter((diario) => diario.turmaId === turma.id);
                 const semNotas = turmaDiarios.filter(
-                  (diario) => diario.notaA1 === null || diario.notaA2 === null,
+                  (diario) => diario.notaSemestral === null,
                 ).length;
 
                 return (

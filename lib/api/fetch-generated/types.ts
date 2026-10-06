@@ -23,6 +23,7 @@ export type TipoComponente =
   | "OPTATIVO";
 export type TipoEntrega = "PRESENCIAL_FISICO" | "SINCRONO_MEDIADO" | "ASSINCRONO_DIGITAL";
 export type IntervaloCobranca = "MONTH";
+export type StatusDisciplina = "EM_ABERTO" | "APROVADO" | "RF" | "RN";
 
 export interface DeleteResponse {
   id: string;
@@ -173,19 +174,29 @@ export interface AuditoriaMec {
   matrizId: string;
   matrizNome: string;
   cursoNome: string;
+  modalidadeCurso?: ModalidadeCurso;
   campusId: string;
   campusNome: string;
   codigoPolo: string;
   chTotalGeral: number;
   chExtensaoTotal: number;
+  chExtensaoPorTipo?: number;
   percentualExtensao: number;
   cumpreRegra10PorcentoExtensao: boolean;
   chPresencialTotal: number;
   percentualPresencial: number;
   chSincronaTotal: number;
   percentualSincrono: number;
+  chAssincronaTotal?: number;
+  percentualAssincrono?: number;
   percentualPresencialESincrono: number;
   quantidadeComponentes: number;
+  conformeDecreto12456?: boolean;
+  violacoes?: Array<{
+    codigo: "IDENTIDADE_CH" | "MODALIDADE_DISCIPLINA" | "EXTENSAO_10";
+    mensagem: string;
+    disciplinaId?: string;
+  }>;
 }
 
 export interface Turma {
@@ -227,23 +238,48 @@ export interface DiarioClasse {
   id: string;
   matriculaId: string;
   turmaId: string;
-  notaA1: number | null;
-  notaA2: number | null;
-  notaAF: number | null;
-  notaFinal: number | null;
+  notaAv: number | null;
+  notaAvs: number | null;
+  notaAv3: number | null;
+  notaSemestral: number | null;
+  mediaFinal: number | null;
+  habilitaAv3: boolean;
   totalFaltas: number;
   chCumprida: number;
-  aprovado: boolean | null;
+  statusDisciplina: StatusDisciplina;
+  semestreFechado: boolean;
   turma: {id: string; codigo: string; disciplina: Disciplina};
   aluno: {ra: string; nome: string};
 }
 
 export interface UpdateGradesInput {
   diarioClasseId: string;
-  notaA1?: number;
-  notaA2?: number;
-  notaAF?: number;
+  notaAv?: number;
+  notaAvs?: number;
+  notaAv3?: number;
   totalFaltas?: number;
+}
+
+export interface FecharSemestreInput {
+  turmaId: string;
+}
+
+export interface FecharSemestreResponse {
+  turmaId: string;
+  fechados: number;
+  diarios: Array<{
+    id: string;
+    notaAv: number | null;
+    notaAvs: number | null;
+    notaAv3: number | null;
+    notaSemestral: number | null;
+    mediaFinal: number | null;
+    habilitaAv3: boolean;
+    totalFaltas: number;
+    chCumprida: number;
+    statusDisciplina: StatusDisciplina;
+    semestreFechado: boolean;
+  }>;
 }
 
 export interface User {
