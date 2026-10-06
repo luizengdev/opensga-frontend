@@ -79,6 +79,14 @@ export const ClientComponent = (props) => {
 };
 ```
 
+## Diário de classe e auditoria curricular
+
+- Notas: `notaAv`, `notaAvs`, `notaAv3`. `notaSemestral = MAX(AV, AVS)` (nulos ignorados). Nunca use A1/A2/AF.
+- Lançamento (client): `useUpdateGrades` → `PATCH /diario/avaliar`. Campos omitidos preservam o valor. Não integraliza CH.
+- Fechamento (client): `useFecharSemestre` → `POST /diario/fechar-semestre` com `{ turmaId }`. RF se faltas > 25% da CH (soberano); senão NS ≥ 6 → aprovado; senão MF = (NS + AV3) / 2 (corte 5,0). 409 atômico se NS ausente ou AV3 obrigatória faltando.
+- Status de disciplina: `EM_ABERTO` | `APROVADO` | `RF` | `RN`.
+- Auditoria estrita: `GET /academic/matrizes/:id/auditoria` (409 se violação do Decreto 12.456 ou extensão &lt; 10%). Dashboard usa `GET .../auditoria-mec` (sempre 200).
+
 ## Pagamentos (Stripe)
 
 - **NUNCA** use `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` nem o SDK Stripe no frontend.
