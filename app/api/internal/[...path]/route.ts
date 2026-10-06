@@ -23,16 +23,17 @@ const proxyToApi = async (request: NextRequest, pathSegments: string[]) => {
   const search = request.nextUrl.search;
   const body =
     method === "GET" || method === "DELETE" ? undefined : await request.text();
+  const payloadBody = body && body.length > 0 ? body : undefined;
 
   const response = await fetch(`${getApiBaseUrl()}${upstreamPath}${search}`, {
     method,
     cache: "no-store",
     signal: AbortSignal.timeout(8000),
     headers: {
-      "Content-Type": "application/json",
+      ...(payloadBody ? {"Content-Type": "application/json"} : {}),
       ...(token ? {Authorization: `Bearer ${token}`} : {}),
     },
-    body: body && body.length > 0 ? body : undefined,
+    body: payloadBody,
   });
 
   const payload = await response.text();

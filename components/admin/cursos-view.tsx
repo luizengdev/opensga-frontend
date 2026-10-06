@@ -3,14 +3,16 @@
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useQueryClient} from "@tanstack/react-query";
 import {GraduationCap, Pencil, PlusCircle, Trash2} from "lucide-react";
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {useForm} from "react-hook-form";
 import {toast} from "sonner";
 import {z} from "zod";
 
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
+import {AdminSearchField} from "@/components/admin/admin-search-field";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
@@ -40,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {MODALIDADE_LABEL} from "@/lib/admin/labels";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
 import type {Campus, Curso, ModalidadeCurso} from "@/lib/api/fetch-generated";
 import {
@@ -77,6 +80,7 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
   const {mutate: deleteCurso, isPending: isDeleting} = useDeleteCurso();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Curso | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const lista = cursos ?? initialCursos;
   const listaCampi = campi ?? initialCampi;
 
@@ -157,6 +161,29 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
     return listaCampi.find((campus) => campus.id === campusId)?.nome ?? campusId;
   };
 
+  const filtrados = useMemo(() => {
+    const termo = searchTerm.trim().toLowerCase();
+
+    if (termo.length === 0) {
+      return lista;
+    }
+
+    return lista.filter((curso) => {
+      const campus = listaCampi.find((item) => item.id === curso.campusId);
+      const campos = [
+        curso.nome,
+        curso.codigoMec ?? "",
+        MODALIDADE_LABEL[curso.modalidade],
+        campus?.nome ?? "",
+        campus?.codigoPolo ?? "",
+      ];
+
+      return campos.some((campo) => campo.toLowerCase().includes(termo));
+    });
+  }, [lista, listaCampi, searchTerm]);
+
+  const pagination = useClientPagination({items: filtrados, resetKey: searchTerm});
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -173,14 +200,31 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
 
       <Card>
         <CardContent>
+          <AdminSearchField
+            onValueChange={setSearchTerm}
+            placeholder="Buscar por nome, campus, modalidade ou código MEC..."
+            value={searchTerm}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
           {lista.length === 0 ? (
             <AdminEmptyState
               description="Cadastre um campus antes de criar cursos de graduação."
               icon={GraduationCap}
               title="Nenhum curso cadastrado"
             />
+          ) : filtrados.length === 0 ? (
+            <AdminEmptyState
+              description="Nenhum curso corresponde ao termo informado. Ajuste a busca para ver a oferta."
+              icon={GraduationCap}
+              title="Nenhum curso encontrado"
+            />
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Curso</TableHead>
@@ -192,7 +236,7 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lista.map((curso) => (
+                {pagination.pageItems.map((curso) => (
                   <TableRow key={curso.id}>
                     <TableCell className="font-medium">{curso.nome}</TableCell>
                     <TableCell>{campusNome(curso.campusId)}</TableCell>
@@ -234,6 +278,15 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
                 ))}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>

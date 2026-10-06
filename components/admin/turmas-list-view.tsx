@@ -12,6 +12,7 @@ import {z} from "zod";
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {ConflictDialog} from "@/components/admin/conflict-dialog";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/table";
 import {formatPeriodoLetivo} from "@/lib/academic/periodo-letivo";
 import {TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {
   buildTurmaRestrictMessage,
   getMutationErrorMessage,
@@ -138,6 +140,11 @@ export const TurmasListView = ({
     });
   }, [lista, campusFilter, searchTerm]);
 
+  const pagination = useClientPagination({
+    items: filtradas,
+    resetKey: `${searchTerm}|${campusFilter}`,
+  });
+
   const invalidate = () => {
     void queryClient.invalidateQueries({queryKey: getGetTurmasQueryKey(periodo)});
   };
@@ -219,7 +226,8 @@ export const TurmasListView = ({
               title="Nenhuma turma encontrada"
             />
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Código</TableHead>
@@ -232,7 +240,7 @@ export const TurmasListView = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtradas.map((turma) => (
+                {pagination.pageItems.map((turma) => (
                   <TableRow key={turma.id}>
                     <TableCell>
                       <Button
@@ -298,6 +306,15 @@ export const TurmasListView = ({
                 ))}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>

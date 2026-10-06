@@ -78,7 +78,7 @@ export const requestApi = async <T>(path: string, init?: RequestInit) => {
     cache: init?.cache ?? "no-store",
     signal: init?.signal ?? AbortSignal.timeout(8000),
     headers: {
-      "Content-Type": "application/json",
+      ...(init?.body ? {"Content-Type": "application/json"} : {}),
       ...authHeaders,
       ...init?.headers,
     },

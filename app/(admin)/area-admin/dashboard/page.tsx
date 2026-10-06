@@ -20,15 +20,17 @@ const DashboardAdminPage = async () => {
   const periodo = getPeriodoLetivoAtual();
 
   if (session.role === "PROFESSOR") {
-    const [dashboard, turmas, diarios, me] = await Promise.all([
+    const [dashboard, turmas, diarios, me, comunicados] = await Promise.all([
       getDashboardProfessor(periodo),
       getTurmas(periodo),
       getDiarios(),
       getMe(),
+      getComunicados(),
     ]);
 
     return (
       <DashboardProfessorView
+        initialComunicados={comunicados}
         initialDashboard={dashboard}
         initialDiarios={diarios}
         initialTurmas={turmas}
@@ -41,14 +43,18 @@ const DashboardAdminPage = async () => {
     getDashboardAdmin(periodo),
     getTurmas(periodo),
     getFaturas(),
-    getComunicados(),
+    getComunicados({publicoAlvo: "ADMIN"}),
     getCampi(),
     getMatrizes(),
   ]);
 
-  const auditorias = await Promise.all(
-    matrizes.filter((matriz) => matriz.ativo).map((matriz) => getAuditoriaMec(matriz.id)),
-  );
+  const auditorias = (
+    await Promise.allSettled(
+      matrizes.filter((matriz) => matriz.ativo).map((matriz) => getAuditoriaMec(matriz.id)),
+    )
+  )
+    .filter((resultado) => resultado.status === "fulfilled")
+    .map((resultado) => resultado.value);
 
   return (
     <DashboardAdminView

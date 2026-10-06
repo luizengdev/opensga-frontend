@@ -1,12 +1,12 @@
 import {ComunicadosView} from "@/components/admin/comunicados-view";
 import {getComunicados} from "@/lib/api/fetch-generated";
-import {requireSecretariaSession} from "@/lib/auth/require-admin-session";
+import {requireAdminSession} from "@/lib/auth/require-admin-session";
 
 const ComunicadosAdminPage = async () => {
-  await requireSecretariaSession();
+  const session = await requireAdminSession();
   const comunicados = await getComunicados();
 
-  return <ComunicadosView initialComunicados={comunicados} />;
+  return <ComunicadosView canManage={session.role === "ADMIN"} initialComunicados={comunicados} />;
 };
 
 export default ComunicadosAdminPage;

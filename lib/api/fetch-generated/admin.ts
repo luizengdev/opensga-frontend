@@ -4,6 +4,7 @@ import type {
   AddComponenteInput,
   AdminDashboard,
   Aluno,
+  AuthRole,
   AuditoriaMec,
   Campus,
   Comunicado,
@@ -41,6 +42,8 @@ import type {
   TipoReclamacao,
   Turma,
   UpdateGradesInput,
+  UpdateProfessorInput,
+  UpdateUserInput,
   User,
 } from "./types";
 
@@ -140,6 +143,13 @@ export const getProfessores = async () => requestApi<Professor[]>("/api/v1/users
 export const createProfessor = async (data: CreateProfessorInput) =>
   requestApi<Professor>("/api/v1/users/professores", {method: "POST", body: JSON.stringify(data)});
 export const getAlunos = async () => requestApi<Aluno[]>("/api/v1/users/alunos");
+export const updateUser = async ({id, data}: {id: string; data: UpdateUserInput}) =>
+  requestApi<User>(`/api/v1/users/${id}`, {method: "PATCH", body: JSON.stringify(data)});
+export const updateProfessor = async ({id, data}: {id: string; data: UpdateProfessorInput}) =>
+  requestApi<Professor>(`/api/v1/users/professores/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 export const deleteUser = async (id: string) =>
   requestApi<DeleteResponse>(`/api/v1/users/${id}`, {method: "DELETE"});
 
@@ -182,7 +192,8 @@ export const updateFaturaStatus = async ({id, status}: {id: string; status: Stat
     body: JSON.stringify({status}),
   });
 
-export const getComunicados = async () => requestApi<Comunicado[]>("/api/v1/comunicados");
+export const getComunicados = async (query?: {publicoAlvo?: AuthRole}) =>
+  requestApi<Comunicado[]>(`/api/v1/comunicados${toQueryString(query)}`);
 export const createComunicado = async (data: CreateComunicadoInput) =>
   requestApi<Comunicado>("/api/v1/comunicados", {method: "POST", body: JSON.stringify(data)});
 export const deleteComunicado = async (id: string) =>

@@ -18,7 +18,10 @@ const MatrizesAdminPage = async () => {
 
   const primeira = matrizes[0];
   const [auditoria, componentes] = primeira
-    ? await Promise.all([getAuditoriaMec(primeira.id), getComponentesMatriz(primeira.id)])
+    ? await Promise.all([
+        getAuditoriaMec(primeira.id).catch(() => null),
+        getComponentesMatriz(primeira.id),
+      ])
     : [null, []];
 
   return (

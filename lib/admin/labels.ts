@@ -33,10 +33,10 @@ export const STATUS_RECLAMACAO_LABEL: Record<StatusReclamacao, string> = {
 };
 
 export const TIPO_RECLAMACAO_LABEL: Record<TipoReclamacao, string> = {
-  FINANCEIRO: "Financeiro",
-  ACADEMICO: "Acadêmico",
-  SECRETARIA: "Secretaria",
-  INFRAESTRUTURA: "Infraestrutura",
+  FINANCEIRO: "Financeiro / cobrança",
+  ACADEMICO: "Coordenação pedagógica",
+  SECRETARIA: "Secretaria acadêmica",
+  INFRAESTRUTURA: "Infraestrutura & TI",
   OUVIDORIA_GERAL: "Ouvidoria geral",
 };
 

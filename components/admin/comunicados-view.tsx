@@ -2,7 +2,7 @@
 
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useQueryClient} from "@tanstack/react-query";
-import {Megaphone, PlusCircle, Trash2} from "lucide-react";
+import {Megaphone, PlusCircle, Send} from "lucide-react";
 import {useState} from "react";
 import {useForm} from "react-hook-form";
 import {toast} from "sonner";
@@ -10,10 +10,10 @@ import {z} from "zod";
 
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
-import {Badge} from "@/components/ui/badge";
+import {ComunicadoMuralCard} from "@/components/admin/comunicado-mural-card";
+import {ConfirmDialog} from "@/components/admin/confirm-dialog";
 import {Button} from "@/components/ui/button";
-import {Card, CardContent} from "@/components/ui/card";
-import {Checkbox} from "@/components/ui/checkbox";
+import {Card} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -32,16 +32,11 @@ import {
 } from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
-import {formatDateBr} from "@/lib/admin/format";
+import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
 import {ROLE_LABEL} from "@/lib/admin/labels";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
 import type {AuthRole, Comunicado} from "@/lib/api/fetch-generated";
-import {
-  getGetComunicadosQueryKey,
-  useCreateComunicado,
-  useDeleteComunicado,
-  useGetComunicados,
-} from "@/lib/api/rc-generated";
+import {useCreateComunicado, useDeleteComunicado, useGetComunicados} from "@/lib/api/rc-generated";
 
 const papeis: AuthRole[] = ["ADMIN", "PROFESSOR", "ALUNO", "RESPONSAVEL"];
 
@@ -53,31 +48,44 @@ const comunicadoSchema = z.object({
 
 type ComunicadoFormValues = z.infer<typeof comunicadoSchema>;
 
+const defaultValues: ComunicadoFormValues = {
+  titulo: "",
+  conteudo: "",
+  publicoAlvo: ["ADMIN", "PROFESSOR", "ALUNO"],
+};
+
 interface ComunicadosViewProps {
+  canManage: boolean;
   initialComunicados: Comunicado[];
 }
 
-export const ComunicadosView = ({initialComunicados}: ComunicadosViewProps) => {
+export const ComunicadosView = ({canManage, initialComunicados}: ComunicadosViewProps) => {
   const queryClient = useQueryClient();
   const {data: comunicados} = useGetComunicados({initialData: initialComunicados});
   const {mutate: createComunicado, isPending: isCreating} = useCreateComunicado();
   const {mutate: deleteComunicado, isPending: isDeleting} = useDeleteComunicado();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [targetId, setTargetId] = useState<string | null>(null);
   const lista = comunicados ?? initialComunicados;
 
   const form = useForm<ComunicadoFormValues>({
     resolver: zodResolver(comunicadoSchema),
-    defaultValues: {titulo: "", conteudo: "", publicoAlvo: ["ALUNO"]},
+    defaultValues,
   });
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({queryKey: getGetComunicadosQueryKey()});
+    void queryClient.invalidateQueries({queryKey: ["/api/v1/comunicados"]});
+  };
+
+  const openCreate = () => {
+    form.reset(defaultValues);
+    setDialogOpen(true);
   };
 
   const onSubmit = form.handleSubmit((payload) => {
     createComunicado(payload, {
       onSuccess: () => {
-        toast.success("Comunicado publicado.");
+        toast.success("Comunicado institucional publicado.");
         invalidate();
         setDialogOpen(false);
       },
@@ -89,64 +97,40 @@ export const ComunicadosView = ({initialComunicados}: ComunicadosViewProps) => {
     <div className="space-y-6">
       <AdminPageHeader
         actions={
-          <Button onClick={() => setDialogOpen(true)} size="sm">
-            <PlusCircle />
-            Novo comunicado
-          </Button>
+          canManage ? (
+            <Button onClick={openCreate} size="sm">
+              <PlusCircle />
+              Novo comunicado
+            </Button>
+          ) : null
         }
-        description="Mural institucional expedido pela secretaria para os públicos selecionados."
-        eyebrow="Comunicação institucional"
-        title="Comunicados"
+        description="Publicação de portarias, calendários de provas e editais acadêmicos para a comunidade."
+        eyebrow="Secretaria & comunicação institucional"
+        title="Comunicados oficiais"
       />
 
       {lista.length === 0 ? (
         <Card>
           <AdminEmptyState
-            description="Publique avisos para alunos, professores ou a comunidade acadêmica."
+            description={
+              canManage
+                ? "Não há informativos ou avisos vigentes registrados no momento."
+                : "Não há comunicados vigentes destinados ao seu perfil."
+            }
             icon={Megaphone}
-            title="Nenhum comunicado"
+            title="Nenhum comunicado publicado"
           />
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {lista.map((comunicado) => (
-            <Card key={comunicado.id}>
-              <CardContent className="space-y-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-sm font-semibold">{comunicado.titulo}</h2>
-                    <p className="font-mono text-[11px] text-muted-foreground">
-                      {formatDateBr(comunicado.criadoEm)}
-                    </p>
-                  </div>
-                  <Button
-                    aria-label={`Excluir ${comunicado.titulo}`}
-                    disabled={isDeleting}
-                    onClick={() =>
-                      deleteComunicado(comunicado.id, {
-                        onSuccess: () => {
-                          toast.success("Comunicado removido.");
-                          invalidate();
-                        },
-                        onError: (error) => toast.error(getMutationErrorMessage(error)),
-                      })
-                    }
-                    size="icon-sm"
-                    variant="ghost"
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">{comunicado.conteudo}</p>
-                <div className="flex flex-wrap gap-1">
-                  {comunicado.publicoAlvo.map((papel) => (
-                    <Badge key={papel} variant="outline">
-                      {ROLE_LABEL[papel]}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <ComunicadoMuralCard
+              canManage={canManage}
+              comunicado={comunicado}
+              isDeleting={isDeleting}
+              key={comunicado.id}
+              onDelete={() => setTargetId(comunicado.id)}
+            />
           ))}
         </div>
       )}
@@ -154,8 +138,10 @@ export const ComunicadosView = ({initialComunicados}: ComunicadosViewProps) => {
       <Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Novo comunicado</DialogTitle>
-            <DialogDescription>Selecione ao menos um público-alvo.</DialogDescription>
+            <DialogTitle>Publicar comunicado institucional</DialogTitle>
+            <DialogDescription>
+              Envio de aviso oficial direcionado aos perfis do OpenSGA.
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form className="space-y-4" onSubmit={onSubmit}>
@@ -164,22 +150,12 @@ export const ComunicadosView = ({initialComunicados}: ComunicadosViewProps) => {
                 name="titulo"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel>Título</FormLabel>
+                    <FormLabel>Título do comunicado</FormLabel>
                     <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="conteudo"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Conteúdo</FormLabel>
-                    <FormControl>
-                      <Textarea className="min-h-28" {...field} />
+                      <Input
+                        placeholder="Ex: Calendário oficial de exames finais 2026.2"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -190,23 +166,44 @@ export const ComunicadosView = ({initialComunicados}: ComunicadosViewProps) => {
                 name="publicoAlvo"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel>Público-alvo</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {papeis.map((papel) => (
-                        <label className="flex items-center gap-2 text-xs" key={papel}>
-                          <Checkbox
-                            checked={field.value.includes(papel)}
-                            onCheckedChange={(checked) => {
-                              const next = checked
-                                ? [...field.value, papel]
-                                : field.value.filter((item) => item !== papel);
-                              field.onChange(next);
-                            }}
-                          />
-                          {ROLE_LABEL[papel]}
-                        </label>
-                      ))}
-                    </div>
+                    <FormLabel>Público-alvo destinatário</FormLabel>
+                    <FormControl>
+                      <ToggleGroup
+                        className="flex w-full flex-wrap"
+                        multiple
+                        onValueChange={(next) => field.onChange(next)}
+                        value={field.value}
+                      >
+                        {papeis.map((papel) => (
+                          <ToggleGroupItem
+                            className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary aria-pressed:hover:text-primary-foreground data-pressed:border-primary data-pressed:bg-primary data-pressed:text-primary-foreground data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                            key={papel}
+                            size="sm"
+                            value={papel}
+                            variant="outline"
+                          >
+                            {ROLE_LABEL[papel]}
+                          </ToggleGroupItem>
+                        ))}
+                      </ToggleGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="conteudo"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Conteúdo da publicação</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        className="min-h-28"
+                        placeholder="Digite o teor do comunicado oficial..."
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -216,13 +213,40 @@ export const ComunicadosView = ({initialComunicados}: ComunicadosViewProps) => {
                   Cancelar
                 </Button>
                 <Button disabled={isCreating} type="submit">
-                  Publicar
+                  <Send />
+                  Publicar comunicado
                 </Button>
               </DialogFooter>
             </form>
           </Form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        description="O aviso sai do mural de todos os destinatários. Esta ação não pode ser desfeita."
+        isPending={isDeleting}
+        onConfirm={() => {
+          if (!targetId) {
+            return;
+          }
+
+          deleteComunicado(targetId, {
+            onSuccess: () => {
+              toast.success("Comunicado removido.");
+              invalidate();
+              setTargetId(null);
+            },
+            onError: (error) => toast.error(getMutationErrorMessage(error)),
+          });
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTargetId(null);
+          }
+        }}
+        open={targetId !== null}
+        title="Remover comunicado institucional?"
+      />
     </div>
   );
 };

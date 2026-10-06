@@ -3,13 +3,15 @@
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useQueryClient} from "@tanstack/react-query";
 import {BookOpen, Pencil, PlusCircle, Trash2} from "lucide-react";
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {useForm} from "react-hook-form";
 import {toast} from "sonner";
 import {z} from "zod";
 
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
+import {AdminSearchField} from "@/components/admin/admin-search-field";
+import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -38,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import type {Disciplina} from "@/lib/api/fetch-generated";
 import {
   getGetDisciplinasQueryKey,
@@ -66,6 +69,7 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
   const {mutate: deleteDisciplina, isPending: isDeleting} = useDeleteDisciplina();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Disciplina | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const lista = disciplinas ?? initialDisciplinas;
 
   const form = useForm<DisciplinaFormValues>({
@@ -88,6 +92,23 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
     form.reset({nome: disciplina.nome, codigo: disciplina.codigo});
     setDialogOpen(true);
   };
+
+  const filtradas = useMemo(() => {
+    const termo = searchTerm.trim().toLowerCase();
+
+    if (termo.length === 0) {
+      return lista;
+    }
+
+    return lista.filter((disciplina) => {
+      return (
+        disciplina.nome.toLowerCase().includes(termo) ||
+        disciplina.codigo.toLowerCase().includes(termo)
+      );
+    });
+  }, [lista, searchTerm]);
+
+  const pagination = useClientPagination({items: filtradas, resetKey: searchTerm});
 
   const onSubmit = form.handleSubmit((payload) => {
     const data = {...payload, codigo: payload.codigo.toUpperCase()};
@@ -133,14 +154,31 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
 
       <Card>
         <CardContent>
+          <AdminSearchField
+            onValueChange={setSearchTerm}
+            placeholder="Buscar por código da disciplina (ex: ESW101) ou nome..."
+            value={searchTerm}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
           {lista.length === 0 ? (
             <AdminEmptyState
               description="Cadastre disciplinas globais como Cálculo I ou Ética antes de montar as matrizes."
               icon={BookOpen}
               title="Nenhuma disciplina cadastrada"
             />
+          ) : filtradas.length === 0 ? (
+            <AdminEmptyState
+              description="Nenhuma disciplina corresponde ao termo informado. Ajuste a busca para ver o catálogo."
+              icon={BookOpen}
+              title="Nenhuma disciplina encontrada"
+            />
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Código</TableHead>
@@ -149,7 +187,7 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lista.map((disciplina) => (
+                {pagination.pageItems.map((disciplina) => (
                   <TableRow key={disciplina.id}>
                     <TableCell className="font-mono">{disciplina.codigo}</TableCell>
                     <TableCell>{disciplina.nome}</TableCell>
@@ -184,6 +222,15 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
                 ))}
               </TableBody>
             </Table>
+              <AdminTablePagination
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+              />
+            </>
           )}
         </CardContent>
       </Card>
