@@ -4,13 +4,15 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {useQueryClient} from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Calculator,
+  Calendar,
   Clock,
+  Edit3,
   GraduationCap,
   MapPin,
-  Pencil,
-  Trash2,
+  Percent,
+  Save,
   UserPlus,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 import {useMemo, useState} from "react";
@@ -22,7 +24,14 @@ import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminSelect} from "@/components/admin/admin-select";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +43,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -54,7 +64,6 @@ import type {DiarioClasse, Matricula, Turma} from "@/lib/api/fetch-generated";
 import {
   getGetDiariosQueryKey,
   useAvaliarDiario,
-  useDeleteDiario,
   useEnturmarAluno,
   useGetDiarios,
   useGetTurma,
@@ -82,6 +91,21 @@ const parseNota = (value: string) => {
   return Number(value.replace(",", "."));
 };
 
+const CH_TOTAL = 80;
+const LIMITE_FALTAS = Math.floor(CH_TOTAL * 0.25);
+
+const formatDiarioNota = (nota: number | null, accent = false) => {
+  if (nota === null) {
+    return <span className="italic text-muted-foreground">—</span>;
+  }
+
+  return (
+    <span className={accent ? "font-medium text-primary" : "font-medium"}>
+      {nota.toFixed(1)}
+    </span>
+  );
+};
+
 interface TurmaDetailViewProps {
   initialDiarios: DiarioClasse[];
   initialMatriculas: Matricula[];
@@ -103,7 +127,6 @@ export const TurmaDetailView = ({
   });
   const {mutate: enturmar, isPending: isEnturmando} = useEnturmarAluno();
   const {mutate: avaliar, isPending: isAvaliando} = useAvaliarDiario();
-  const {mutate: removerDiario, isPending: isRemovendo} = useDeleteDiario();
   const [enturmarOpen, setEnturmarOpen] = useState(false);
   const [avaliacaoOpen, setAvaliacaoOpen] = useState(false);
   const [diarioSelecionado, setDiarioSelecionado] = useState<DiarioClasse | null>(null);
@@ -111,6 +134,13 @@ export const TurmaDetailView = ({
   const atual = turma ?? initialTurma;
   const listaDiarios = diarios ?? initialDiarios;
   const listaMatriculas = initialMatriculas;
+  const emailPorMatricula = useMemo(
+    () =>
+      new Map(
+        listaMatriculas.map((matricula) => [matricula.id, matricula.aluno.user.email] as const),
+      ),
+    [listaMatriculas],
+  );
   const matriculasDisponiveis = listaMatriculas.filter(
     (matricula) =>
       matricula.status === "ATIVO" &&
@@ -140,7 +170,7 @@ export const TurmaDetailView = ({
 
     const ms = a1 * 0.4 + a2 * 0.6;
 
-    if (faltas > 20) {
+    if (faltas > LIMITE_FALTAS) {
       return {
         ms: ms.toFixed(1),
         mf: "—",
@@ -257,7 +287,7 @@ export const TurmaDetailView = ({
         {isAdmin ? (
           <Button onClick={() => setEnturmarOpen(true)} size="sm">
             <UserPlus />
-            Enturmar aluno
+            Enturmar Aluno
           </Button>
         ) : null}
       </div>
@@ -267,7 +297,7 @@ export const TurmaDetailView = ({
           <CardContent>
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <GraduationCap className="size-3.5 text-primary" />
-              Professor titular
+              Professor Titular
             </span>
             <div className="mt-1 text-sm font-semibold">{atual.professor.user.nome}</div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">
@@ -279,11 +309,11 @@ export const TurmaDetailView = ({
           <CardContent>
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Clock className="size-3.5 text-primary" />
-              Horário semestral
+              Horário Semestral
             </span>
             <div className="mt-1 font-mono text-xs font-semibold">{atual.horario}</div>
             <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-              {atual.anoLetivo}.{atual.semestreLetivo}
+              Ano/Sem: {atual.anoLetivo}.{atual.semestreLetivo}
             </div>
           </CardContent>
         </Card>
@@ -291,103 +321,143 @@ export const TurmaDetailView = ({
           <CardContent>
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <MapPin className="size-3.5 text-primary" />
-              Local
+              Local / Sala / Link
             </span>
-            <div className="mt-1 text-sm font-semibold">{atual.salaOuLink || "A definir"}</div>
+            <div className="mt-1 truncate text-xs font-medium">{atual.salaOuLink || "Sala padrão"}</div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              Carga Horária: {CH_TOTAL}h (Máx {LIMITE_FALTAS} faltas)
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Users className="size-3.5 text-primary" />
-              Ocupação
+              <Percent className="size-3.5 text-primary" />
+              Vagas Ofertadas
             </span>
-            <div className="mt-1 font-mono text-sm font-semibold tabular-nums">
-              {listaDiarios.length}/{atual.capacidade}
+            <div className="mt-1 font-mono text-sm font-bold tabular-nums">
+              {listaDiarios.length} / {atual.capacidade} alunos
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              {atual.capacidade - listaDiarios.length} vagas remanescentes
             </div>
           </CardContent>
         </Card>
       </div>
 
+      <div className="flex flex-col items-start justify-between gap-4 rounded-[var(--radius)] border border-border bg-muted/40 p-4 text-xs md:flex-row md:items-center">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <Calculator className="size-4 text-primary" />
+            <span>Regulamento Geral de Avaliação e Integralização MEC</span>
+          </div>
+          <p className="text-muted-foreground">
+            Média Semestral:{" "}
+            <strong className="font-mono text-foreground">(A1 × 0,4) + (A2 × 0,6)</strong>. Aprovação
+            Direta se MS ≥ 6,0 e Faltas ≤ 25%. Em caso de Exame Final:{" "}
+            <strong className="font-mono text-foreground">MF = (MS + AF) / 2</strong> (Aprovado se MF ≥
+            5,0).
+          </p>
+        </div>
+        <span className="shrink-0 rounded border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground">
+          CH: {CH_TOTAL}h · Limite Faltas: {LIMITE_FALTAS}h
+        </span>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Diário de classe</CardTitle>
+          <CardTitle>Diário de Classe Eletrônico</CardTitle>
           <CardDescription>
-            Lançamento de A1, A2, AF e faltas. MS = (A1 × 0,4) + (A2 × 0,6).
+            Lançamento e consolidação de notas A1, A2, Avaliação Final (AF) e cômputo de faltas.
           </CardDescription>
+          <CardAction>
+            <span className="font-mono text-xs text-muted-foreground">
+              {listaDiarios.length} diários ativos
+            </span>
+          </CardAction>
         </CardHeader>
         <CardContent>
           {listaDiarios.length === 0 ? (
             <AdminEmptyState
-              description="Enturme matrículas ativas para iniciar o diário eletrônico."
-              icon={Users}
+              description="Esta turma ainda não possui discentes vinculados ao diário eletrônico."
+              icon={Calendar}
               title="Nenhum aluno enturmado"
             />
           ) : (
-            <Table>
-              <TableHeader>
+            <Table className="text-xs">
+              <TableHeader className="bg-muted/30 text-[10px] font-medium tracking-wider uppercase">
                 <TableRow>
-                  <TableHead>RA</TableHead>
-                  <TableHead>Aluno</TableHead>
-                  <TableHead>A1</TableHead>
-                  <TableHead>A2</TableHead>
-                  <TableHead>AF</TableHead>
-                  <TableHead>Final</TableHead>
-                  <TableHead>Faltas</TableHead>
-                  <TableHead>Situação</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-muted-foreground">RA</TableHead>
+                  <TableHead className="text-muted-foreground">Aluno</TableHead>
+                  <TableHead className="text-center text-muted-foreground">A1 (40%)</TableHead>
+                  <TableHead className="text-center text-muted-foreground">A2 (60%)</TableHead>
+                  <TableHead className="text-center text-muted-foreground">AF</TableHead>
+                  <TableHead className="text-center text-muted-foreground">Faltas (CH)</TableHead>
+                  <TableHead className="text-center text-muted-foreground">Média Final</TableHead>
+                  <TableHead className="text-center text-muted-foreground">Resultado</TableHead>
+                  <TableHead className="text-right text-muted-foreground">Lançamento</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {listaDiarios.map((diario) => (
-                  <TableRow key={diario.id}>
-                    <TableCell className="font-mono">{diario.aluno.ra}</TableCell>
-                    <TableCell>{diario.aluno.nome}</TableCell>
-                    <TableCell className="font-mono">{diario.notaA1 ?? "—"}</TableCell>
-                    <TableCell className="font-mono">{diario.notaA2 ?? "—"}</TableCell>
-                    <TableCell className="font-mono">{diario.notaAF ?? "—"}</TableCell>
-                    <TableCell className="font-mono">{diario.notaFinal ?? "—"}</TableCell>
-                    <TableCell className="font-mono">{diario.totalFaltas}</TableCell>
-                    <TableCell>
-                      {diario.aprovado === null ? (
-                        <Badge variant="outline">Em avaliação</Badge>
-                      ) : diario.aprovado ? (
-                        <Badge>Aprovado</Badge>
-                      ) : (
-                        <Badge variant="destructive">Reprovado</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        aria-label={`Lançar notas de ${diario.aluno.nome}`}
-                        onClick={() => openAvaliacao(diario)}
-                        size="icon-sm"
-                        variant="ghost"
-                      >
-                        <Pencil />
-                      </Button>
-                      {isAdmin ? (
-                        <Button
-                          aria-label={`Remover ${diario.aluno.nome} do diário`}
-                          disabled={isRemovendo}
-                          onClick={() =>
-                            removerDiario(diario.id, {
-                              onSuccess: () => {
-                                toast.success("Aluno removido do diário.");
-                                invalidate();
-                              },
-                              onError: (error) => toast.error(getMutationErrorMessage(error)),
-                            })
+                {listaDiarios.map((diario) => {
+                  const reprovadoPorFalta = diario.totalFaltas > LIMITE_FALTAS;
+                  const email = emailPorMatricula.get(diario.matriculaId);
+
+                  return (
+                    <TableRow key={diario.id}>
+                      <TableCell className="font-mono font-medium">{diario.aluno.ra}</TableCell>
+                      <TableCell className="whitespace-normal">
+                        <div className="font-semibold">{diario.aluno.nome}</div>
+                        {email ? (
+                          <div className="font-mono text-[10px] text-muted-foreground">{email}</div>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-center font-mono tabular-nums">
+                        {formatDiarioNota(diario.notaA1)}
+                      </TableCell>
+                      <TableCell className="text-center font-mono tabular-nums">
+                        {formatDiarioNota(diario.notaA2)}
+                      </TableCell>
+                      <TableCell className="text-center font-mono tabular-nums">
+                        {formatDiarioNota(diario.notaAF, true)}
+                      </TableCell>
+                      <TableCell className="text-center font-mono tabular-nums">
+                        <span
+                          className={
+                            reprovadoPorFalta ? "font-bold text-destructive" : "text-foreground"
                           }
-                          size="icon-sm"
-                          variant="ghost"
                         >
-                          <Trash2 />
+                          {diario.totalFaltas}h
+                        </span>
+                        <span className="text-[10px] text-muted-foreground"> / {LIMITE_FALTAS}h</span>
+                      </TableCell>
+                      <TableCell className="text-center font-mono font-bold tabular-nums">
+                        {diario.notaFinal === null ? "—" : diario.notaFinal.toFixed(1)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {reprovadoPorFalta ? (
+                          <Badge variant="destructive">Reprovado / Falta</Badge>
+                        ) : diario.aprovado === true ? (
+                          <Badge variant="success">Aprovado</Badge>
+                        ) : diario.aprovado === false ? (
+                          <Badge variant="destructive">Reprovado</Badge>
+                        ) : (
+                          <Badge variant="warning">Em Aberto</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          onClick={() => openAvaliacao(diario)}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <Edit3 className="text-primary" />
+                          Lançar
                         </Button>
-                      ) : null}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -397,8 +467,10 @@ export const TurmaDetailView = ({
       <Dialog onOpenChange={setEnturmarOpen} open={enturmarOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enturmar aluno</DialogTitle>
-            <DialogDescription>Vincule uma matrícula ativa a esta turma.</DialogDescription>
+            <DialogTitle>Enturmar Aluno na Disciplina</DialogTitle>
+            <DialogDescription>
+              Vincular matrícula ativa da matriz curricular à turma {atual.codigo}
+            </DialogDescription>
           </DialogHeader>
           <Form {...enturmarForm}>
             <form className="space-y-4" onSubmit={onEnturmar}>
@@ -407,15 +479,15 @@ export const TurmaDetailView = ({
                 name="matriculaId"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel>Matrícula</FormLabel>
+                    <FormLabel>Selecione o Aluno (Matrícula Ativa)</FormLabel>
                     <FormControl>
                       <AdminSelect
                         items={matriculasDisponiveis.map((matricula) => ({
                           value: matricula.id,
-                          label: `${matricula.aluno.ra} · ${matricula.aluno.user.nome}`,
+                          label: `${matricula.aluno.ra} - ${matricula.aluno.user.nome} (${matricula.curso.nome})`,
                         }))}
                         onValueChange={field.onChange}
-                        placeholder="Selecione o RA"
+                        placeholder="Selecione um aluno cadastrado..."
                         value={field.value}
                       />
                     </FormControl>
@@ -423,12 +495,16 @@ export const TurmaDetailView = ({
                   </FormItem>
                 )}
               />
+              <p className="rounded-[calc(var(--radius)-4px)] border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
+                A enturmação criará automaticamente o diário eletrônico para cômputo de notas A1/A2 e
+                frequência.
+              </p>
               <DialogFooter>
                 <Button onClick={() => setEnturmarOpen(false)} type="button" variant="outline">
                   Cancelar
                 </Button>
                 <Button disabled={isEnturmando} type="submit">
-                  Enturmar
+                  Efetivar Enturmação
                 </Button>
               </DialogFooter>
             </form>
@@ -439,25 +515,32 @@ export const TurmaDetailView = ({
       <Dialog onOpenChange={setAvaliacaoOpen} open={avaliacaoOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Lançar notas</DialogTitle>
+            <DialogTitle>
+              {diarioSelecionado
+                ? `Lançamento Acadêmico: ${diarioSelecionado.aluno.nome}`
+                : "Lançamento Acadêmico"}
+            </DialogTitle>
             <DialogDescription>
               {diarioSelecionado
-                ? `${diarioSelecionado.aluno.ra} · ${diarioSelecionado.aluno.nome}`
+                ? `RA: ${diarioSelecionado.aluno.ra} · Turma: ${atual.codigo} · Carga: ${CH_TOTAL}h`
                 : "Avaliação"}
             </DialogDescription>
           </DialogHeader>
           <Form {...avaliacaoForm}>
             <form className="space-y-4" onSubmit={onAvaliar}>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <FormField
                   control={avaliacaoForm.control}
                   name="notaA1"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>A1</FormLabel>
+                      <FormLabel>Nota A1 (0 a 10)</FormLabel>
                       <FormControl>
-                        <Input inputMode="decimal" placeholder="0-10" {...field} />
+                        <Input inputMode="decimal" placeholder="Ex: 8.5" step="0.1" {...field} />
                       </FormControl>
+                      <FormDescription className="text-[11px]">
+                        Peso 40% na Média Semestral
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -467,10 +550,13 @@ export const TurmaDetailView = ({
                   name="notaA2"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>A2</FormLabel>
+                      <FormLabel>Nota A2 (0 a 10)</FormLabel>
                       <FormControl>
-                        <Input inputMode="decimal" placeholder="0-10" {...field} />
+                        <Input inputMode="decimal" placeholder="Ex: 7.0" step="0.1" {...field} />
                       </FormControl>
+                      <FormDescription className="text-[11px]">
+                        Peso 60% na Média Semestral
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -480,48 +566,65 @@ export const TurmaDetailView = ({
                   name="notaAF"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>AF</FormLabel>
+                      <FormLabel>Exame Final - AF (0 a 10)</FormLabel>
                       <FormControl>
-                        <Input inputMode="decimal" placeholder="0-10" {...field} />
+                        <Input inputMode="decimal" placeholder="Ex: 6.0" step="0.1" {...field} />
                       </FormControl>
+                      <FormDescription className="text-[11px]">Apenas se MS {'<'} 6,0</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              <FormField
-                control={avaliacaoForm.control}
-                name="totalFaltas"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Total de faltas</FormLabel>
-                    <FormControl>
-                      <Input
-                        min={0}
-                        onBlur={field.onBlur}
-                        onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                        ref={field.ref}
-                        type="number"
-                        value={field.value}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-muted/40 p-3 text-xs">
-                <p>
-                  MS: <span className="font-mono font-semibold">{preview.ms}</span> · MF:{" "}
-                  <span className="font-mono font-semibold">{preview.mf}</span>
-                </p>
-                <p className="mt-1 text-muted-foreground">{preview.status}</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <FormField
+                  control={avaliacaoForm.control}
+                  name="totalFaltas"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>Total de Faltas (Horas)</FormLabel>
+                      <FormControl>
+                        <Input
+                          max={CH_TOTAL}
+                          min={0}
+                          onBlur={field.onBlur}
+                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                          ref={field.ref}
+                          type="number"
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-[11px]">
+                        Limite legal: {LIMITE_FALTAS} horas (25% de {CH_TOTAL}h)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex flex-col justify-center rounded-[calc(var(--radius)-4px)] border border-border bg-muted/60 p-2.5 text-xs">
+                  <span className="block text-[11px] font-semibold text-foreground">
+                    Cálculo em Tempo Real:
+                  </span>
+                  <div className="mt-0.5 flex items-center gap-3 font-mono text-[11px] text-foreground">
+                    <span>
+                      MS: <strong>{preview.ms}</strong>
+                    </span>
+                    <span>
+                      MF: <strong>{preview.mf}</strong>
+                    </span>
+                  </div>
+                  <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                    {preview.status}
+                  </span>
+                </div>
               </div>
               <DialogFooter>
                 <Button onClick={() => setAvaliacaoOpen(false)} type="button" variant="outline">
                   Cancelar
                 </Button>
                 <Button disabled={isAvaliando} type="submit">
-                  Salvar lançamento
+                  <Save />
+                  Consolidar Lançamento
                 </Button>
               </DialogFooter>
             </form>
