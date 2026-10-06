@@ -1,17 +1,30 @@
-import { requireAdminSession } from "@/lib/auth/require-admin-session";
+import {TurmasListView} from "@/components/admin/turmas-list-view";
+import {getPeriodoLetivoAtual} from "@/lib/academic/periodo-letivo";
+import {getCampi, getDisciplinas, getProfessores, getTurmas} from "@/lib/api/fetch-generated";
+import {requireAdminSession} from "@/lib/auth/require-admin-session";
 
 const TurmasAdminPage = async () => {
-  await requireAdminSession();
+  const session = await requireAdminSession();
+  const periodo = getPeriodoLetivoAtual();
+  const isAdmin = session.role === "ADMIN";
+
+  const [turmas, campi, disciplinas, professores] = await Promise.all([
+    getTurmas(periodo),
+    isAdmin ? getCampi() : Promise.resolve([]),
+    isAdmin ? getDisciplinas() : Promise.resolve([]),
+    isAdmin ? getProfessores() : Promise.resolve([]),
+  ]);
 
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="font-heading text-2xl font-medium text-foreground">
-        Turmas
-      </h1>
-      <p className="text-muted-foreground">
-        Gerenciamento de turmas e diário de classe.
-      </p>
-    </div>
+    <TurmasListView
+      anoLetivo={periodo.anoLetivo}
+      initialCampi={campi}
+      initialDisciplinas={disciplinas}
+      initialProfessores={professores}
+      initialTurmas={turmas}
+      isAdmin={isAdmin}
+      semestreLetivo={periodo.semestreLetivo}
+    />
   );
 };
 
