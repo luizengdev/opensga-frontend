@@ -19,6 +19,7 @@ const MATRICULA_VARIANT: Record<StatusMatricula, BadgeVariant> = {
   PRE_MATRICULADO: "info",
   TRANCADO: "warning",
   FORMADO: "secondary",
+  TRANSFERIDO: "secondary",
   CANCELADO: "destructive",
   EVADIDO: "destructive",
 };

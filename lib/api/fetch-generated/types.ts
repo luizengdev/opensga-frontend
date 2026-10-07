@@ -5,7 +5,8 @@ export type StatusMatricula =
   | "TRANCADO"
   | "CANCELADO"
   | "FORMADO"
-  | "EVADIDO";
+  | "EVADIDO"
+  | "TRANSFERIDO";
 export type StatusFatura = "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA";
 export type StatusReclamacao = "ABERTO" | "EM_ANALISE" | "RESPONDIDO" | "FECHADO";
 export type TipoReclamacao =
@@ -411,6 +412,50 @@ export interface CreateMatriculaResponse {
   ra: string;
   matriculaId: string;
   matrizNome: string;
+}
+
+export interface TransferenciaCampus {
+  id: string;
+  nome: string;
+  codigoPolo: string;
+  tipo: TipoCampus;
+}
+
+export interface TransferenciaDisciplina {
+  diarioId: string;
+  disciplinaId: string;
+  codigo: string;
+  nome: string;
+  statusDisciplina: StatusDisciplina;
+}
+
+export interface TransferenciaCurso {
+  id: string;
+  nome: string;
+  modalidade: ModalidadeCurso;
+  campus: TransferenciaCampus;
+  matriz: {id: string; nome: string; anoVigencia: number};
+}
+
+export interface TransferenciaPreview {
+  matriculaOrigemId: string;
+  aluno: {ra: string; nome: string};
+  origem: TransferenciaCurso;
+  destino: TransferenciaCurso;
+  mesmoCurso: boolean;
+  disciplinasTransferiveis: TransferenciaDisciplina[];
+  disciplinasNaoTransferiveis: TransferenciaDisciplina[];
+}
+
+export interface TransferenciaInterna extends TransferenciaPreview {
+  matriculaDestinoId: string;
+  statusOrigem: "TRANSFERIDO";
+  statusDestino: "ATIVO";
+}
+
+export interface TransferenciaInternaInput {
+  cursoId: string;
+  matrizCurricularId: string;
 }
 
 export interface PrecoCurso {

@@ -39,6 +39,9 @@ import type {
   StatusFatura,
   StatusMatricula,
   StatusReclamacao,
+  TransferenciaInterna,
+  TransferenciaInternaInput,
+  TransferenciaPreview,
   TipoReclamacao,
   Turma,
   UpdateGradesInput,
@@ -167,6 +170,31 @@ export const updateMatriculaStatus = async ({id, status}: {id: string; status: S
   requestApi(`/api/v1/matriculas/${id}/status`, {method: "PATCH", body: JSON.stringify({status})});
 export const deleteMatricula = async (id: string) =>
   requestApi<DeleteResponse>(`/api/v1/matriculas/${id}`, {method: "DELETE"});
+
+export const getTransferenciaPreview = async ({
+  id,
+  cursoId,
+  matrizCurricularId,
+}: {
+  id: string;
+  cursoId: string;
+  matrizCurricularId: string;
+}) =>
+  requestApi<TransferenciaPreview>(
+    `/api/v1/matriculas/${id}/transferencia-preview${toQueryString({cursoId, matrizCurricularId})}`,
+  );
+
+export const transferirMatricula = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: TransferenciaInternaInput;
+}) =>
+  requestApi<TransferenciaInterna>(`/api/v1/matriculas/${id}/transferencia`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 
 export const getPrecos = async () => requestApi<PrecoCurso[]>("/api/v1/financeiro/precos");
 export const createPreco = async (data: {cursoId: string; valor: number}) =>

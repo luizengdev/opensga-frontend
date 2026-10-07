@@ -92,6 +92,7 @@ export const ClientComponent = (props) => {
 - Disciplina (catálogo): formulário com CH, tipo e entrega (`CargaCurricularFields`). Semestre ideal não entra. Tabela mostra CH total e tipo.
 - Matriz — adicionar componente: combobox de disciplina (nome/código); só pede semestre ideal; carga/tipo vêm do catálogo. Excluir matriz: toast se ainda houver componentes; vazia → `ConfirmDialog` + `useDeleteMatriz`; 409 de matrícula no `ConflictDialog`.
 - Turma: ofertar escolhendo `cursoId`, `anoLetivo` e `semestreLetivo`. Disciplinas filtradas pela matriz do curso; campus vem da unidade do curso. Lista filtra período e curso.
+- Transferência interna (ADMIN): rota `/area-admin/transferencia-interna`. Preview `useGetTransferenciaPreview` → `GET /matriculas/:id/transferencia-preview`. Efetivar `useTransferirMatricula` → `POST /matriculas/:id/transferencia` com `{ cursoId, matrizCurricularId }`. Mesmo curso (nome) move todo o histórico; curso diferente move só disciplinas da matriz de destino. Origem vira `TRANSFERIDO`; destino nasce `ATIVO`.
 
 ## Pagamentos (Stripe)
 

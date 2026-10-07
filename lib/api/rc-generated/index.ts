@@ -55,9 +55,11 @@ import {
   getReclamacoes,
   getTurma,
   getTurmas,
+  getTransferenciaPreview,
   getUsers,
   login,
   responderReclamacao,
+  transferirMatricula,
   updateCampus,
   updateCurso,
   updateDisciplina,
@@ -91,6 +93,7 @@ import {
   type ProfessorDashboard,
   type StatusFatura,
   type StatusMatricula,
+  type TransferenciaInternaInput,
   type UpdateGradesInput,
   type UpdateProfessorInput,
   type UpdateUserInput,
@@ -360,6 +363,30 @@ export const useUpdateMatriculaStatus = () =>
     mutationFn: (payload: {id: string; status: StatusMatricula}) => updateMatriculaStatus(payload),
   });
 export const useDeleteMatricula = () => useMutation({mutationFn: deleteMatricula});
+
+export const getGetTransferenciaPreviewQueryKey = (params: {
+  id: string;
+  cursoId: string;
+  matrizCurricularId: string;
+}) => ["/api/v1/matriculas", params.id, "transferencia-preview", params] as const;
+
+export const useGetTransferenciaPreview = (params: {
+  id: string;
+  cursoId: string;
+  matrizCurricularId: string;
+}) =>
+  useQuery({
+    queryKey: getGetTransferenciaPreviewQueryKey(params),
+    queryFn: () => getTransferenciaPreview(params),
+    enabled: Boolean(params.id && params.cursoId && params.matrizCurricularId),
+    retry: false,
+  });
+
+export const useTransferirMatricula = () =>
+  useMutation({
+    mutationFn: (payload: {id: string; data: TransferenciaInternaInput}) =>
+      transferirMatricula(payload),
+  });
 
 export const getGetPrecosQueryKey = () => ["/api/v1/financeiro/precos"] as const;
 export const useGetPrecos = (options?: {initialData?: Awaited<ReturnType<typeof getPrecos>>}) =>

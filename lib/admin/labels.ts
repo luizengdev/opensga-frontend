@@ -17,6 +17,7 @@ export const STATUS_MATRICULA_LABEL: Record<StatusMatricula, string> = {
   CANCELADO: "Cancelado",
   FORMADO: "Formado",
   EVADIDO: "Evadido",
+  TRANSFERIDO: "Transferido",
 };
 
 export const STATUS_FATURA_LABEL: Record<StatusFatura, string> = {
