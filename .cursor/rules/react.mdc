@@ -41,6 +41,11 @@ alwaysApply: true
 - Antes de criar uma nova variável de cor, **SEMPRE** busque na documentação do shadcn/ui sobre theming e veja se realmente é necessário.
 - **SEMPRE** veja os componentes que podem ser reutilizados para construção de uma página em `@/components/ui/page.tsx`.
 
+## Painel administrativo — navegação
+
+- Nav em `lib/admin/nav.ts`. **Matrículas & RA** é item colapsável (`AdminNavItem.children`): Alterar Situação → `/area-admin/matriculas`; Consulta Acadêmica → `/area-admin/consulta-academica`.
+- Largura da sidebar: `--admin-sidebar-width` (padrão `16rem` / 256px) em `:root`. Arraste a borda direita (`AdminSidebarResizeHandle`); faixa 224–420px; persistir em `localStorage` (`opensga.admin-sidebar-width`). Clique duplo restaura o padrão. O conteúdo usa `md:pl-[var(--admin-sidebar-width)]`.
+
 ## Autenticação com FastifyJWT
 
 - **NUNCA** use middleware para verificação de autenticação de páginas. **SEMPRE** faça a verificação de sessão diretamente na página (Server Component) lendo o cookie `auth_token`.

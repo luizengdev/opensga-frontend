@@ -3,6 +3,7 @@ import type {SessionRole} from "@/lib/auth/roles";
 export interface AdminNavItem {
   label: string;
   href: string;
+  children?: AdminNavItem[];
 }
 
 export interface AdminNavGroup {
@@ -29,7 +30,14 @@ const adminNavGroups: AdminNavGroup[] = [
   {
     group: "Secretaria & Alunos",
     items: [
-      {label: "Matrículas & RA", href: "/area-admin/matriculas"},
+      {
+        label: "Matrículas & RA",
+        href: "/area-admin/matriculas",
+        children: [
+          {label: "Alterar Situação do Aluno", href: "/area-admin/matriculas"},
+          {label: "Consulta Acadêmica Aluno", href: "/area-admin/consulta-academica"},
+        ],
+      },
       {label: "Transferência Interna", href: "/area-admin/transferencia-interna"},
       {label: "Emissão de Documentos", href: "/area-admin/emissao-documentos"},
       {label: "Gestão de Pessoas", href: "/area-admin/usuarios"},
@@ -80,7 +88,9 @@ export const getAdminBreadcrumb = (pathname: string, role: SessionRole) => {
     case "diario":
       return parts[2] ? `Diário Eletrônico / ${parts[2]}` : "Diário de Classe";
     case "matriculas":
-      return "Matrículas & RA";
+      return "Alterar Situação do Aluno";
+    case "consulta-academica":
+      return "Consulta Acadêmica Aluno";
     case "transferencia-interna":
       return "Transferência Interna";
     case "emissao-documentos":

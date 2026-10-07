@@ -95,6 +95,8 @@ export const ClientComponent = (props) => {
 - Matriz — adicionar componente: combobox de disciplina (nome/código); só pede semestre ideal; carga/tipo vêm do catálogo. Excluir matriz: toast se ainda houver componentes; vazia → `ConfirmDialog` + `useDeleteMatriz`; 409 de matrícula no `ConflictDialog`.
 - Turma: ofertar escolhendo `cursoId`, `anoLetivo` e `semestreLetivo`. Disciplinas filtradas pela matriz do curso; campus vem da unidade do curso. Lista filtra período e curso.
 - Transferência interna (ADMIN): rota `/area-admin/transferencia-interna`. Preview `useGetTransferenciaPreview` → `GET /matriculas/:id/transferencia-preview`. Efetivar `useTransferirMatricula` → `POST /matriculas/:id/transferencia` com `{ cursoId, matrizCurricularId }`. Mesmo curso (nome) move todo o histórico; curso diferente move só disciplinas da matriz de destino. Origem vira `TRANSFERIDO`; destino nasce `ATIVO`.
+- Matrículas / situação (ADMIN): rota `/area-admin/matriculas` (submenu “Alterar Situação do Aluno”). O item **Matrículas & RA** em `lib/admin/nav.ts` é colapsável (`children`).
+- Consulta acadêmica (ADMIN): rota `/area-admin/consulta-academica`. Busca unificada por RA, nome ou CPF em `useGetMatriculas` + `useGetAlunos`. Dossiê com cadastro, notas/faltas por semestre (`useGetDiarios` + `useGetTurmas`), horários com professor, histórico, aproveitamento (vazio até existir o fluxo na API) e faturas (`useGetFaturas`). Vestibular não existe no cadastro — exibir “Não informado”. Sem endpoints novos: só GETs já usados pela secretaria.
 
 ## Pagamentos (Stripe)
 

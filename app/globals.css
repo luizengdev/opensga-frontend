@@ -116,6 +116,7 @@
   --info: oklch(0.593 0.128 237.777);
   --info-foreground: oklch(0.374 0.078 238.745);
   --radius: 0.625rem;
+  --admin-sidebar-width: 16rem;
   --sidebar: oklch(0.235 0.046 265.471);
   --sidebar-foreground: oklch(0.96 0.008 247.905);
   --sidebar-primary: oklch(0.984 0.003 247.858);

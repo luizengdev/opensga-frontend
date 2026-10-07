@@ -110,11 +110,13 @@ O seed monta `SEDE-REC` (campus presencial) e `POLO-EAD` (polo EAD), 10 cursos, 
 | :--- | :--- | :--- |
 | Institucional | `/`, `/inscricao`, `/inscricao/[cursoId]` | público |
 | Auth | `/login-admin`, `/login-aluno` | público (redireciona se a sessão já vale) |
-| Secretaria | `/area-admin/dashboard`, turmas, matrizes, disciplinas, cursos, campi, matrículas, usuários, preços, faturas, comunicados, ouvidoria | `ADMIN` |
+| Secretaria | `/area-admin/dashboard`, turmas, matrizes, disciplinas, cursos, campi, parametrizações, matrículas, consulta acadêmica, transferência, emissão de documentos, usuários, preços, faturas, comunicados, ouvidoria | `ADMIN` |
 | Docente | dashboard, turmas/diário, comunicados (leitura) | `PROFESSOR` |
 | Aluno / responsável | `/area-aluno/dashboard`, notas, curso, matrícula, faturas, documentos, comunicados, ouvidoria, perfil | `ALUNO` / `RESPONSAVEL` |
 
 O produto atual cobre o portal interno (`ADMIN` / `PROFESSOR`), a inscrição pública e o self-service do aluno/responsável via `GET /portal/contexto` e emissão de documentos (`GET /portal/documentos`, `POST /portal/documentos/emitir`) — sem CRUD desses papéis no front. Modelos oficiais ficam em `/area-admin/emissao-documentos`.
+
+Na secretaria, **Matrículas & RA** é um submenu: Alterar Situação (`/area-admin/matriculas`) e Consulta Acadêmica (`/area-admin/consulta-academica`, busca por RA/nome/CPF). A sidebar admin tem largura arrastável (borda direita; 224–420px, persistida no navegador).
 
 ---
 
