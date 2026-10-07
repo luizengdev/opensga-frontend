@@ -1,18 +1,17 @@
-import { requireAlunoSession } from "@/lib/auth/require-aluno-session";
+import {DashboardView} from "@/components/aluno/dashboard-view";
+import {getPortalContexto} from "@/lib/api/fetch-generated";
+import {requireAlunoSession} from "@/lib/auth/require-aluno-session";
 
-const DashboardAlunoPage = async () => {
+interface DashboardAlunoPageProps {
+  searchParams: Promise<{alunoId?: string}>;
+}
+
+const DashboardAlunoPage = async ({searchParams}: DashboardAlunoPageProps) => {
   await requireAlunoSession();
+  const {alunoId} = await searchParams;
+  const contexto = await getPortalContexto(alunoId);
 
-  return (
-    <div className="flex flex-col gap-3">
-      <h1 className="font-heading text-2xl font-medium text-foreground">
-        Dashboard do aluno
-      </h1>
-      <p className="text-muted-foreground">
-        Home da área do aluno.
-      </p>
-    </div>
-  );
+  return <DashboardView initialData={contexto} />;
 };
 
 export default DashboardAlunoPage;

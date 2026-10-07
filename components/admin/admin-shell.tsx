@@ -4,7 +4,9 @@ import {type ReactNode, useState} from "react";
 
 import {AdminHeader} from "@/components/admin/admin-header";
 import {AdminSidebar} from "@/components/admin/admin-sidebar";
+import {SessionIdleGuard} from "@/components/auth/session-idle-guard";
 import type {SessionRole} from "@/lib/auth/roles";
+import {ADMIN_IDLE_MS} from "@/lib/auth/session-idle";
 
 interface AdminShellProps {
   children: ReactNode;
@@ -18,6 +20,7 @@ export const AdminShell = ({children, email, nome, role}: AdminShellProps) => {
 
   return (
     <div className="flex min-h-full flex-1 bg-background text-foreground">
+      <SessionIdleGuard idleMs={ADMIN_IDLE_MS} loginPath="/login-admin" />
       <AdminSidebar
         email={email}
         isOpenMobile={isMobileSidebarOpen}

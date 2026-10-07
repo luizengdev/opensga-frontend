@@ -85,7 +85,15 @@ export const ClientComponent = (props) => {
 - Lançamento (client): `useUpdateGrades` → `PATCH /diario/avaliar`. Campos omitidos preservam o valor. Não integraliza CH.
 - Fechamento (client): `useFecharSemestre` → `POST /diario/fechar-semestre` com `{ turmaId }`. RF se faltas > 25% da CH (soberano); senão NS ≥ 6 → aprovado; senão MF = (NS + AV3) / 2 (corte 5,0). 409 atômico se NS ausente ou AV3 obrigatória faltando.
 - Status de disciplina: `EM_ABERTO` | `APROVADO` | `RF` | `RN`.
+- Portal do aluno: `GET /portal/contexto` via `getPortalContexto` / `useGetPortalContexto` (query `alunoId` para responsável). Documentos: catálogo `getPortalDocumentos` / `useGetPortalDocumentos`; emissão `useEmitirPortalDocumento` → `POST /portal/documentos/emitir` com `{ tipo, alunoId? }` e modal em folha (`window.print()`). Ouvidoria própria: `useCreatePortalReclamacao`. Senha: `useChangePassword` → `PATCH /auth/senha`. Sessão: `useRenovarSessao` → `POST /auth/renovar` (desliza o JWT: 20 min ADMIN/PROFESSOR, 30 min ALUNO/RESPONSAVEL). Pagar fatura só se `stripePaymentUrl` e valor > 0 (redirecionar à URL Stripe; R$ 0 sem Checkout).
+- Emissão de documentos (ADMIN): rota `/area-admin/emissao-documentos`. Lista `useGetModelosDocumento` → `GET /documentos/modelos`. Editar texto e disponibilidade `useUpdateModeloDocumento` → `PATCH /documentos/modelos/:id`. Sem Switch: select `ativo` true/false. O aluno só vê modelos ativos.
 - Auditoria estrita: `GET /academic/matrizes/:id/auditoria` (409 se violação do Decreto 12.456 ou extensão &lt; 10%). Dashboard usa `GET .../auditoria-mec` (sempre 200).
+- Campus: cadastro com `tipo` `CAMPI` (presencial/semipresencial) ou `POLO` (EAD). Código da unidade em `codigoPolo`.
+- Curso: modalidade deve bater com o tipo da unidade (polo → só EAD; campus → sem EAD).
+- Disciplina (catálogo): formulário com CH, tipo e entrega (`CargaCurricularFields`). Semestre ideal não entra. Tabela mostra CH total e tipo.
+- Matriz — adicionar componente: combobox de disciplina (nome/código); só pede semestre ideal; carga/tipo vêm do catálogo. Excluir matriz: toast se ainda houver componentes; vazia → `ConfirmDialog` + `useDeleteMatriz`; 409 de matrícula no `ConflictDialog`.
+- Turma: ofertar escolhendo `cursoId`, `anoLetivo` e `semestreLetivo`. Disciplinas filtradas pela matriz do curso; campus vem da unidade do curso. Lista filtra período e curso.
+- Transferência interna (ADMIN): rota `/area-admin/transferencia-interna`. Preview `useGetTransferenciaPreview` → `GET /matriculas/:id/transferencia-preview`. Efetivar `useTransferirMatricula` → `POST /matriculas/:id/transferencia` com `{ cursoId, matrizCurricularId }`. Mesmo curso (nome) move todo o histórico; curso diferente move só disciplinas da matriz de destino. Origem vira `TRANSFERIDO`; destino nasce `ATIVO`.
 
 ## Pagamentos (Stripe)
 

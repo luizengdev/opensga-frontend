@@ -1,6 +1,7 @@
 import {requestApi} from "@/lib/api/request";
 
 export * from "./admin";
+export * from "./portal";
 export * from "./types";
 
 export type CatalogoModalidade = "PRESENCIAL" | "SEMIPRESENCIAL" | "EAD";
@@ -88,5 +89,15 @@ export const login = async (data: LoginInput) => {
   return requestApi<LoginResponse>("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+};
+
+export interface RenewSessionResponse {
+  token: string;
+}
+
+export const renovarSessao = async () => {
+  return requestApi<RenewSessionResponse>("/api/v1/auth/renovar", {
+    method: "POST",
   });
 };

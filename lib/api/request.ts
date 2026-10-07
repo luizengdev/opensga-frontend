@@ -63,9 +63,38 @@ const getServerAuthHeaders = async (): Promise<HeadersInit> => {
   return {Authorization: `Bearer ${token}`};
 };
 
+const resolveLoginPath = (pathname: string) => {
+  if (pathname.startsWith("/area-aluno") || pathname.startsWith("/login-aluno")) {
+    return "/login-aluno";
+  }
+
+  return "/login-admin";
+};
+
+const getRequestPathname = async () => {
+  if (typeof window !== "undefined") {
+    return window.location.pathname;
+  }
+
+  const {headers} = await import("next/headers");
+  const headerStore = await headers();
+  const nextUrl = headerStore.get("next-url") ?? "";
+  const referer = headerStore.get("referer") ?? "";
+
+  try {
+    if (referer.length > 0) {
+      return new URL(referer).pathname;
+    }
+  } catch {
+    return nextUrl;
+  }
+
+  return nextUrl;
+};
+
 const redirectToLogin = async () => {
   await clearAuthTokenCookie();
-  window.location.assign("/login-admin");
+  window.location.assign(resolveLoginPath(window.location.pathname));
 };
 
 export const requestApi = async <T>(path: string, init?: RequestInit) => {
@@ -92,7 +121,7 @@ export const requestApi = async <T>(path: string, init?: RequestInit) => {
     } else {
       await clearAuthTokenCookie();
       const {redirect} = await import("next/navigation");
-      redirect("/login-admin");
+      redirect(resolveLoginPath(await getRequestPathname()));
     }
   }
 

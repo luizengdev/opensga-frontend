@@ -1,32 +1,31 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
+import {Suspense, type ReactNode} from "react";
+
+import {AlunoShell} from "@/components/aluno/aluno-shell";
+import {QueryProvider} from "@/components/query-provider";
+import {Toaster} from "@/components/ui/sonner";
+import {getMe} from "@/lib/api/fetch-generated";
+import {getSession, isAlunoRole} from "@/lib/auth/get-session";
 
 interface AlunoLayoutProps {
   children: ReactNode;
 }
 
-const AlunoLayout = ({ children }: AlunoLayoutProps) => {
+const AlunoLayout = async ({children}: AlunoLayoutProps) => {
+  const session = await getSession();
+
+  if (!session || !isAlunoRole(session.role)) {
+    return children;
+  }
+
+  const me = await getMe();
+
   return (
-    <div className="flex min-h-full flex-1 bg-background">
-      <aside className="flex w-64 shrink-0 flex-col gap-6 border-r border-sidebar-border bg-sidebar px-4 py-6 text-sidebar-foreground">
-        <p className="font-heading text-base font-medium">OpenSGA</p>
-        <nav className="flex flex-col gap-1">
-          <Link
-            href="/area-aluno/dashboard"
-            className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/area-aluno/notas"
-            className="rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          >
-            Notas e frequência
-          </Link>
-        </nav>
-      </aside>
-      <main className="flex-1 px-6 py-8">{children}</main>
-    </div>
+    <QueryProvider>
+      <Suspense>
+        <AlunoShell initialMe={me}>{children}</AlunoShell>
+      </Suspense>
+      <Toaster />
+    </QueryProvider>
   );
 };
 

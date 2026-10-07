@@ -39,6 +39,11 @@ import type {
   StatusFatura,
   StatusMatricula,
   StatusReclamacao,
+  ModeloDocumento,
+  UpdateModeloDocumentoInput,
+  TransferenciaInterna,
+  TransferenciaInternaInput,
+  TransferenciaPreview,
   TipoReclamacao,
   Turma,
   UpdateGradesInput,
@@ -98,6 +103,8 @@ export const getMatrizes = async (cursoId?: string) =>
 export const getMatriz = async (id: string) => requestApi<MatrizDetail>(`/api/v1/academic/matrizes/${id}`);
 export const createMatriz = async (data: CreateMatrizInput) =>
   requestApi<Matriz>("/api/v1/academic/matrizes", {method: "POST", body: JSON.stringify(data)});
+export const deleteMatriz = async (id: string) =>
+  requestApi<DeleteResponse>(`/api/v1/academic/matrizes/${id}`, {method: "DELETE"});
 export const getAuditoriaMec = async (id: string) =>
   requestApi<AuditoriaMec>(`/api/v1/academic/matrizes/${id}/auditoria-mec`);
 export const getComponentesMatriz = async (id: string) =>
@@ -112,6 +119,7 @@ export const deleteComponente = async (id: string) =>
 
 export const getTurmas = async (query?: {
   campusId?: string;
+  cursoId?: string;
   anoLetivo?: number;
   semestreLetivo?: number;
 }) => requestApi<Turma[]>(`/api/v1/academic/turmas${toQueryString(query)}`);
@@ -164,6 +172,45 @@ export const updateMatriculaStatus = async ({id, status}: {id: string; status: S
   requestApi(`/api/v1/matriculas/${id}/status`, {method: "PATCH", body: JSON.stringify({status})});
 export const deleteMatricula = async (id: string) =>
   requestApi<DeleteResponse>(`/api/v1/matriculas/${id}`, {method: "DELETE"});
+
+export const getModelosDocumento = async () =>
+  requestApi<ModeloDocumento[]>("/api/v1/documentos/modelos");
+export const updateModeloDocumento = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: UpdateModeloDocumentoInput;
+}) =>
+  requestApi<ModeloDocumento>(`/api/v1/documentos/modelos/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+
+export const getTransferenciaPreview = async ({
+  id,
+  cursoId,
+  matrizCurricularId,
+}: {
+  id: string;
+  cursoId: string;
+  matrizCurricularId: string;
+}) =>
+  requestApi<TransferenciaPreview>(
+    `/api/v1/matriculas/${id}/transferencia-preview${toQueryString({cursoId, matrizCurricularId})}`,
+  );
+
+export const transferirMatricula = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: TransferenciaInternaInput;
+}) =>
+  requestApi<TransferenciaInterna>(`/api/v1/matriculas/${id}/transferencia`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 
 export const getPrecos = async () => requestApi<PrecoCurso[]>("/api/v1/financeiro/precos");
 export const createPreco = async (data: {cursoId: string; valor: number}) =>

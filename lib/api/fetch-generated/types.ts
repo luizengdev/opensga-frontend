@@ -5,7 +5,8 @@ export type StatusMatricula =
   | "TRANCADO"
   | "CANCELADO"
   | "FORMADO"
-  | "EVADIDO";
+  | "EVADIDO"
+  | "TRANSFERIDO";
 export type StatusFatura = "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA";
 export type StatusReclamacao = "ABERTO" | "EM_ANALISE" | "RESPONDIDO" | "FECHADO";
 export type TipoReclamacao =
@@ -15,6 +16,7 @@ export type TipoReclamacao =
   | "INFRAESTRUTURA"
   | "OUVIDORIA_GERAL";
 export type ModalidadeCurso = "PRESENCIAL" | "SEMIPRESENCIAL" | "EAD";
+export type TipoCampus = "CAMPI" | "POLO";
 export type TipoComponente =
   | "CORE_VIDA_CARREIRA"
   | "ESPECIFICO"
@@ -24,9 +26,24 @@ export type TipoComponente =
 export type TipoEntrega = "PRESENCIAL_FISICO" | "SINCRONO_MEDIADO" | "ASSINCRONO_DIGITAL";
 export type IntervaloCobranca = "MONTH";
 export type StatusDisciplina = "EM_ABERTO" | "APROVADO" | "RF" | "RN";
+export type TipoDocumento =
+  | "DECLARACAO_MATRICULA"
+  | "HISTORICO_PARCIAL"
+  | "QUITACAO_FINANCEIRA"
+  | "CARTEIRINHA_ESTUDANTIL";
 
 export interface DeleteResponse {
   id: string;
+}
+
+export interface PortalDependente {
+  id: string;
+  nome: string;
+  ra: string;
+  curso: string;
+  periodo: number;
+  statusMatricula: StatusMatricula;
+  avatarUrl: string | null;
 }
 
 export interface MeProfile {
@@ -39,6 +56,7 @@ export interface MeProfile {
   ativo: boolean;
   aluno: {id: string; ra: string} | null;
   professor: {id: string; matricula: string; titulacao: string} | null;
+  dependentes: PortalDependente[];
 }
 
 export interface DashboardPeriodQuery {
@@ -74,6 +92,7 @@ export interface Campus {
   id: string;
   nome: string;
   codigoPolo: string;
+  tipo: TipoCampus;
   cidade: string;
   estado: string;
   endereco: string;
@@ -82,6 +101,7 @@ export interface Campus {
 export interface CreateCampusInput {
   nome: string;
   codigoPolo: string;
+  tipo: TipoCampus;
   cidade: string;
   estado: string;
   endereco: string;
@@ -104,15 +124,32 @@ export interface CreateCursoInput {
   duracaoSemestres?: number;
 }
 
-export interface Disciplina {
+export interface DisciplinaResumo {
   id: string;
   nome: string;
   codigo: string;
 }
 
+export interface Disciplina extends DisciplinaResumo {
+  tipo: TipoComponente;
+  tipoEntrega: TipoEntrega;
+  chTotal: number;
+  chPresencial: number;
+  chSincrona: number;
+  chAssincrona: number;
+  chExtensao: number;
+}
+
 export interface CreateDisciplinaInput {
   nome: string;
   codigo: string;
+  tipo: TipoComponente;
+  tipoEntrega: TipoEntrega;
+  chTotal: number;
+  chPresencial: number;
+  chSincrona: number;
+  chAssincrona: number;
+  chExtensao: number;
 }
 
 export interface Matriz {
@@ -132,7 +169,7 @@ export interface MatrizDetail extends Matriz {
     tipo: TipoComponente;
     tipoEntrega: TipoEntrega;
     chTotal: number;
-    disciplina: Disciplina;
+    disciplina: DisciplinaResumo;
   }>;
 }
 
@@ -154,7 +191,7 @@ export interface ComponenteCurricular {
   chSincrona: number;
   chAssincrona: number;
   chExtensao: number;
-  disciplina: Disciplina;
+  disciplina: DisciplinaResumo;
 }
 
 export interface AddComponenteInput {
@@ -202,6 +239,7 @@ export interface AuditoriaMec {
 export interface Turma {
   id: string;
   campusId: string;
+  cursoId: string;
   disciplinaId: string;
   professorId: string;
   codigo: string;
@@ -211,7 +249,8 @@ export interface Turma {
   horario: string;
   salaOuLink: string | null;
   tipoEntrega: TipoEntrega;
-  disciplina: Disciplina;
+  curso: {id: string; nome: string};
+  disciplina: DisciplinaResumo;
   chTotal: number | null;
   professor: {
     id: string;
@@ -224,6 +263,7 @@ export interface Turma {
 
 export interface CreateTurmaInput {
   campusId: string;
+  cursoId: string;
   disciplinaId: string;
   professorId: string;
   codigo: string;
@@ -250,7 +290,7 @@ export interface DiarioClasse {
   chCumprida: number;
   statusDisciplina: StatusDisciplina;
   semestreFechado: boolean;
-  turma: {id: string; codigo: string; disciplina: Disciplina};
+  turma: {id: string; codigo: string; disciplina: DisciplinaResumo};
   aluno: {ra: string; nome: string};
 }
 
@@ -377,6 +417,68 @@ export interface CreateMatriculaResponse {
   ra: string;
   matriculaId: string;
   matrizNome: string;
+}
+
+export interface TransferenciaCampus {
+  id: string;
+  nome: string;
+  codigoPolo: string;
+  tipo: TipoCampus;
+}
+
+export interface TransferenciaDisciplina {
+  diarioId: string;
+  disciplinaId: string;
+  codigo: string;
+  nome: string;
+  statusDisciplina: StatusDisciplina;
+}
+
+export interface TransferenciaCurso {
+  id: string;
+  nome: string;
+  modalidade: ModalidadeCurso;
+  campus: TransferenciaCampus;
+  matriz: {id: string; nome: string; anoVigencia: number};
+}
+
+export interface TransferenciaPreview {
+  matriculaOrigemId: string;
+  aluno: {ra: string; nome: string};
+  origem: TransferenciaCurso;
+  destino: TransferenciaCurso;
+  mesmoCurso: boolean;
+  disciplinasTransferiveis: TransferenciaDisciplina[];
+  disciplinasNaoTransferiveis: TransferenciaDisciplina[];
+}
+
+export interface TransferenciaInterna extends TransferenciaPreview {
+  matriculaDestinoId: string;
+  statusOrigem: "TRANSFERIDO";
+  statusDestino: "ATIVO";
+}
+
+export interface TransferenciaInternaInput {
+  cursoId: string;
+  matrizCurricularId: string;
+}
+
+export interface ModeloDocumento {
+  id: string;
+  tipo: TipoDocumento;
+  titulo: string;
+  descricao: string;
+  finalidade: string;
+  corpo: string;
+  ativo: boolean;
+}
+
+export interface UpdateModeloDocumentoInput {
+  titulo?: string;
+  descricao?: string;
+  finalidade?: string;
+  corpo?: string;
+  ativo?: boolean;
 }
 
 export interface PrecoCurso {

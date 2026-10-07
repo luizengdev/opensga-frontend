@@ -10,6 +10,7 @@ const VARIANT: Record<
   PRE_MATRICULADO: "info",
   TRANCADO: "warning",
   FORMADO: "secondary",
+  TRANSFERIDO: "secondary",
   CANCELADO: "destructive",
   EVADIDO: "destructive",
 };

@@ -12,6 +12,7 @@ import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSearchField} from "@/components/admin/admin-search-field";
 import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
+import {CargaCurricularFields} from "@/components/admin/carga-curricular-fields";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -39,6 +40,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {splitCargaHoraria} from "@/lib/academic/carga-horaria";
+import {TIPO_COMPONENTE_LABEL} from "@/lib/admin/labels";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
 import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import type {Disciplina} from "@/lib/api/fetch-generated";
@@ -50,10 +53,31 @@ import {
   useUpdateDisciplina,
 } from "@/lib/api/rc-generated";
 
-const disciplinaSchema = z.object({
-  nome: z.string().min(3).max(150),
-  codigo: z.string().min(2).max(20),
-});
+const disciplinaSchema = z
+  .object({
+    nome: z.string().min(3).max(150),
+    codigo: z.string().min(2).max(20),
+    tipo: z.enum([
+      "CORE_VIDA_CARREIRA",
+      "ESPECIFICO",
+      "ELETIVA_TRILHA",
+      "EXTENSAO",
+      "OPTATIVO",
+    ]),
+    tipoEntrega: z.enum(["PRESENCIAL_FISICO", "SINCRONO_MEDIADO", "ASSINCRONO_DIGITAL"]),
+    chTotal: z.number().int().min(10),
+    chPresencial: z.number().int().min(0),
+    chSincrona: z.number().int().min(0),
+    chAssincrona: z.number().int().min(0),
+    chExtensao: z.number().int().min(0),
+  })
+  .refine(
+    (payload) => payload.chPresencial + payload.chSincrona + payload.chAssincrona === payload.chTotal,
+    {
+      message: "A soma presencial + síncrona + assíncrona deve ser igual à CH total.",
+      path: ["chAssincrona"],
+    },
+  );
 
 type DisciplinaFormValues = z.infer<typeof disciplinaSchema>;
 
@@ -74,22 +98,52 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
 
   const form = useForm<DisciplinaFormValues>({
     resolver: zodResolver(disciplinaSchema),
-    defaultValues: {nome: "", codigo: ""},
+    defaultValues: {
+      nome: "",
+      codigo: "",
+      tipo: "ESPECIFICO",
+      tipoEntrega: "PRESENCIAL_FISICO",
+      chTotal: 60,
+      chPresencial: 60,
+      chSincrona: 0,
+      chAssincrona: 0,
+      chExtensao: 0,
+    },
   });
 
   const invalidate = () => {
     void queryClient.invalidateQueries({queryKey: getGetDisciplinasQueryKey()});
   };
 
+  const cargaPadrao = {
+    tipo: "ESPECIFICO" as const,
+    tipoEntrega: "PRESENCIAL_FISICO" as const,
+    chTotal: 60,
+    chPresencial: 60,
+    chSincrona: 0,
+    chAssincrona: 0,
+    chExtensao: 0,
+  };
+
   const openCreate = () => {
     setEditing(null);
-    form.reset({nome: "", codigo: ""});
+    form.reset({nome: "", codigo: "", ...cargaPadrao});
     setDialogOpen(true);
   };
 
   const openEdit = (disciplina: Disciplina) => {
     setEditing(disciplina);
-    form.reset({nome: disciplina.nome, codigo: disciplina.codigo});
+    form.reset({
+      nome: disciplina.nome,
+      codigo: disciplina.codigo,
+      tipo: disciplina.tipo,
+      tipoEntrega: disciplina.tipoEntrega,
+      chTotal: disciplina.chTotal,
+      chPresencial: disciplina.chPresencial,
+      chSincrona: disciplina.chSincrona,
+      chAssincrona: disciplina.chAssincrona,
+      chExtensao: disciplina.chExtensao,
+    });
     setDialogOpen(true);
   };
 
@@ -183,6 +237,8 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
                 <TableRow>
                   <TableHead>Código</TableHead>
                   <TableHead>Nome</TableHead>
+                  <TableHead>CH total</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -191,6 +247,8 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
                   <TableRow key={disciplina.id}>
                     <TableCell className="font-mono">{disciplina.codigo}</TableCell>
                     <TableCell>{disciplina.nome}</TableCell>
+                    <TableCell className="font-mono">{disciplina.chTotal}h</TableCell>
+                    <TableCell>{TIPO_COMPONENTE_LABEL[disciplina.tipo]}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         aria-label={`Editar ${disciplina.nome}`}
@@ -236,11 +294,11 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
       </Card>
 
       <Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar disciplina" : "Nova disciplina"}</DialogTitle>
             <DialogDescription>
-              Entidade global reutilizada nas matrizes curriculares.
+              CH total = presencial + síncrona + assíncrona. Semestre ideal é definido ao incluir a disciplina na matriz.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -270,6 +328,15 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
                     <FormMessage />
                   </FormItem>
                 )}
+              />
+              <CargaCurricularFields
+                control={form.control}
+                onChTotalChange={(chTotal) => {
+                  const distribuicao = splitCargaHoraria(chTotal, "PRESENCIAL");
+                  form.setValue("chPresencial", distribuicao.chPresencial);
+                  form.setValue("chSincrona", distribuicao.chSincrona);
+                  form.setValue("chAssincrona", distribuicao.chAssincrona);
+                }}
               />
               <DialogFooter>
                 <Button onClick={() => setDialogOpen(false)} type="button" variant="outline">

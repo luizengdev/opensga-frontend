@@ -4,7 +4,9 @@ import type {
   StatusFatura,
   StatusMatricula,
   StatusReclamacao,
+  TipoCampus,
   TipoComponente,
+  TipoDocumento,
   TipoEntrega,
   TipoReclamacao,
 } from "@/lib/api/fetch-generated";
@@ -16,6 +18,7 @@ export const STATUS_MATRICULA_LABEL: Record<StatusMatricula, string> = {
   CANCELADO: "Cancelado",
   FORMADO: "Formado",
   EVADIDO: "Evadido",
+  TRANSFERIDO: "Transferido",
 };
 
 export const STATUS_FATURA_LABEL: Record<StatusFatura, string> = {
@@ -46,12 +49,32 @@ export const MODALIDADE_LABEL: Record<ModalidadeCurso, string> = {
   EAD: "EAD",
 };
 
+export const TIPO_CAMPUS_LABEL: Record<TipoCampus, string> = {
+  CAMPI: "Campus (presencial)",
+  POLO: "Polo (EAD)",
+};
+
+export const modalidadesPorTipoCampus = (tipo: TipoCampus): ModalidadeCurso[] => {
+  if (tipo === "POLO") {
+    return ["EAD"];
+  }
+
+  return ["PRESENCIAL", "SEMIPRESENCIAL"];
+};
+
 export const TIPO_COMPONENTE_LABEL: Record<TipoComponente, string> = {
   CORE_VIDA_CARREIRA: "Core vida e carreira",
   ESPECIFICO: "Específico",
   ELETIVA_TRILHA: "Eletiva de trilha",
   EXTENSAO: "Extensão",
   OPTATIVO: "Optativo",
+};
+
+export const TIPO_DOCUMENTO_LABEL: Record<TipoDocumento, string> = {
+  DECLARACAO_MATRICULA: "Declaração de matrícula",
+  HISTORICO_PARCIAL: "Histórico escolar parcial",
+  QUITACAO_FINANCEIRA: "Quitação financeira",
+  CARTEIRINHA_ESTUDANTIL: "Carteirinha estudantil",
 };
 
 export const TIPO_ENTREGA_LABEL: Record<TipoEntrega, string> = {

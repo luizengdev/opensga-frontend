@@ -63,6 +63,7 @@ const statusOptions: StatusMatricula[] = [
   "CANCELADO",
   "FORMADO",
   "EVADIDO",
+  "TRANSFERIDO",
 ];
 
 const STATUS_CICLO_LABEL: Record<StatusMatricula, string> = {
@@ -72,6 +73,7 @@ const STATUS_CICLO_LABEL: Record<StatusMatricula, string> = {
   CANCELADO: "Cancelado (desligamento solicitado)",
   FORMADO: "Formado (conclusão e colação de grau)",
   EVADIDO: "Evadido (abandono de curso)",
+  TRANSFERIDO: "Transferido (mudança de curso ou polo/campus)",
 };
 
 const matriculaSchema = z.object({
@@ -93,6 +95,7 @@ const statusSchema = z.object({
     "CANCELADO",
     "FORMADO",
     "EVADIDO",
+    "TRANSFERIDO",
   ]),
 });
 

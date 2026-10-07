@@ -5,7 +5,9 @@ import {useMutation, useQuery} from "@tanstack/react-query";
 import {
   addComponenteMatriz,
   avaliarDiario,
+  changePassword,
   createAdminUser,
+  createPortalReclamacao,
   createCampus,
   createComunicado,
   createCurso,
@@ -14,6 +16,7 @@ import {
   createInscricao,
   createMatricula,
   createMatriz,
+  deleteMatriz,
   createPreco,
   createProfessor,
   createTurma,
@@ -46,14 +49,21 @@ import {
   getMatriz,
   getMatrizes,
   getMe,
+  getPortalContexto,
+  getPortalDocumentos,
+  emitirPortalDocumento,
+  getModelosDocumento,
   getPrecos,
   getProfessores,
   getReclamacoes,
   getTurma,
   getTurmas,
+  getTransferenciaPreview,
   getUsers,
   login,
+  renovarSessao,
   responderReclamacao,
+  transferirMatricula,
   updateCampus,
   updateCurso,
   updateDisciplina,
@@ -61,12 +71,15 @@ import {
   updateMatriculaStatus,
   updatePreco,
   updateProfessor,
+  updateModeloDocumento,
   updateUser,
   type AddComponenteInput,
   type AdminDashboard,
   type AuthRole,
   type CatalogoCurso,
+  type ChangePasswordInput,
   type CreateAdminInput,
+  type CreatePortalReclamacaoInput,
   type CreateCampusInput,
   type CreateComunicadoInput,
   type CreateCursoInput,
@@ -78,13 +91,17 @@ import {
   type CreateProfessorInput,
   type CreateTurmaInput,
   type DashboardPeriodQuery,
+  type EmitirDocumentoInput,
   type FecharSemestreInput,
   type LoginInput,
   type MeProfile,
+  type PortalContexto,
   type ProfessorDashboard,
   type StatusFatura,
   type StatusMatricula,
+  type TransferenciaInternaInput,
   type UpdateGradesInput,
+  type UpdateModeloDocumentoInput,
   type UpdateProfessorInput,
   type UpdateUserInput,
 } from "@/lib/api/fetch-generated";
@@ -115,6 +132,11 @@ export const useLogin = () => {
   });
 };
 
+export const useRenovarSessao = () =>
+  useMutation({
+    mutationFn: renovarSessao,
+  });
+
 export const getGetMeQueryKey = () => ["/api/v1/auth/me"] as const;
 export const useGetMe = (options?: {query?: {initialData?: MeProfile}}) =>
   useQuery({
@@ -122,6 +144,36 @@ export const useGetMe = (options?: {query?: {initialData?: MeProfile}}) =>
     queryFn: getMe,
     initialData: options?.query?.initialData,
   });
+
+export const getGetPortalContextoQueryKey = (alunoId?: string) =>
+  ["/api/v1/portal/contexto", alunoId] as const;
+export const useGetPortalContexto = (options?: {
+  alunoId?: string;
+  query?: {initialData?: PortalContexto};
+}) =>
+  useQuery({
+    queryKey: getGetPortalContextoQueryKey(options?.alunoId),
+    queryFn: () => getPortalContexto(options?.alunoId),
+    initialData: options?.query?.initialData,
+  });
+
+export const useCreatePortalReclamacao = () =>
+  useMutation({mutationFn: (data: CreatePortalReclamacaoInput) => createPortalReclamacao(data)});
+
+export const getGetPortalDocumentosQueryKey = () => ["/api/v1/portal/documentos"] as const;
+export const useGetPortalDocumentos = (options?: {
+  initialData?: Awaited<ReturnType<typeof getPortalDocumentos>>;
+}) =>
+  useQuery({
+    queryKey: getGetPortalDocumentosQueryKey(),
+    queryFn: getPortalDocumentos,
+    initialData: options?.initialData,
+  });
+export const useEmitirPortalDocumento = () =>
+  useMutation({mutationFn: (data: EmitirDocumentoInput) => emitirPortalDocumento(data)});
+
+export const useChangePassword = () =>
+  useMutation({mutationFn: (data: ChangePasswordInput) => changePassword(data)});
 
 export const getGetDashboardAdminQueryKey = (query?: DashboardPeriodQuery) =>
   ["/api/v1/dashboard/admin", query] as const;
@@ -215,6 +267,7 @@ export const useGetMatriz = (id: string, options?: {initialData?: Awaited<Return
   });
 export const useCreateMatriz = () =>
   useMutation({mutationFn: (data: CreateMatrizInput) => createMatriz(data)});
+export const useDeleteMatriz = () => useMutation({mutationFn: deleteMatriz});
 export const useGetAuditoriaMec = (
   id: string,
   options?: {initialData?: Awaited<ReturnType<typeof getAuditoriaMec>>},
@@ -240,10 +293,11 @@ export const useAddComponenteMatriz = () =>
   useMutation({mutationFn: (data: AddComponenteInput) => addComponenteMatriz(data)});
 export const useDeleteComponente = () => useMutation({mutationFn: deleteComponente});
 
-export const getGetTurmasQueryKey = (query?: DashboardPeriodQuery & {campusId?: string}) =>
-  ["/api/v1/academic/turmas", query] as const;
+export const getGetTurmasQueryKey = (
+  query?: DashboardPeriodQuery & {campusId?: string; cursoId?: string},
+) => ["/api/v1/academic/turmas", query] as const;
 export const useGetTurmas = (options?: {
-  query?: {campusId?: string; anoLetivo?: number; semestreLetivo?: number};
+  query?: {campusId?: string; cursoId?: string; anoLetivo?: number; semestreLetivo?: number};
   initialData?: Awaited<ReturnType<typeof getTurmas>>;
 }) =>
   useQuery({
@@ -333,6 +387,45 @@ export const useUpdateMatriculaStatus = () =>
     mutationFn: (payload: {id: string; status: StatusMatricula}) => updateMatriculaStatus(payload),
   });
 export const useDeleteMatricula = () => useMutation({mutationFn: deleteMatricula});
+
+export const getGetModelosDocumentoQueryKey = () => ["/api/v1/documentos/modelos"] as const;
+export const useGetModelosDocumento = (options?: {
+  initialData?: Awaited<ReturnType<typeof getModelosDocumento>>;
+}) =>
+  useQuery({
+    queryKey: getGetModelosDocumentoQueryKey(),
+    queryFn: getModelosDocumento,
+    initialData: options?.initialData,
+  });
+export const useUpdateModeloDocumento = () =>
+  useMutation({
+    mutationFn: (payload: {id: string; data: UpdateModeloDocumentoInput}) =>
+      updateModeloDocumento(payload),
+  });
+
+export const getGetTransferenciaPreviewQueryKey = (params: {
+  id: string;
+  cursoId: string;
+  matrizCurricularId: string;
+}) => ["/api/v1/matriculas", params.id, "transferencia-preview", params] as const;
+
+export const useGetTransferenciaPreview = (params: {
+  id: string;
+  cursoId: string;
+  matrizCurricularId: string;
+}) =>
+  useQuery({
+    queryKey: getGetTransferenciaPreviewQueryKey(params),
+    queryFn: () => getTransferenciaPreview(params),
+    enabled: Boolean(params.id && params.cursoId && params.matrizCurricularId),
+    retry: false,
+  });
+
+export const useTransferirMatricula = () =>
+  useMutation({
+    mutationFn: (payload: {id: string; data: TransferenciaInternaInput}) =>
+      transferirMatricula(payload),
+  });
 
 export const getGetPrecosQueryKey = () => ["/api/v1/financeiro/precos"] as const;
 export const useGetPrecos = (options?: {initialData?: Awaited<ReturnType<typeof getPrecos>>}) =>

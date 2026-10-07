@@ -10,6 +10,8 @@ import {z} from "zod";
 
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
+import {AdminSelect} from "@/components/admin/admin-select";
+import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -29,8 +31,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
+import {TIPO_CAMPUS_LABEL} from "@/lib/admin/labels";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
-import type {Campus, Curso} from "@/lib/api/fetch-generated";
+import type {Campus, Curso, TipoCampus} from "@/lib/api/fetch-generated";
 import {
   getGetCampiQueryKey,
   useCreateCampus,
@@ -40,9 +43,12 @@ import {
   useUpdateCampus,
 } from "@/lib/api/rc-generated";
 
+const tiposCampus: TipoCampus[] = ["CAMPI", "POLO"];
+
 const campusSchema = z.object({
   nome: z.string().min(3).max(120),
   codigoPolo: z.string().min(2).max(20),
+  tipo: z.enum(["CAMPI", "POLO"]),
   cidade: z.string().min(2).max(100),
   estado: z.string().length(2),
   endereco: z.string().min(5).max(255),
@@ -73,6 +79,7 @@ export const CampiView = ({initialCampi, initialCursos}: CampiViewProps) => {
     defaultValues: {
       nome: "",
       codigoPolo: "",
+      tipo: "CAMPI",
       cidade: "",
       estado: "",
       endereco: "",
@@ -84,6 +91,7 @@ export const CampiView = ({initialCampi, initialCursos}: CampiViewProps) => {
     form.reset({
       nome: "",
       codigoPolo: "",
+      tipo: "CAMPI",
       cidade: "",
       estado: "",
       endereco: "",
@@ -96,6 +104,7 @@ export const CampiView = ({initialCampi, initialCursos}: CampiViewProps) => {
     form.reset({
       nome: campus.nome,
       codigoPolo: campus.codigoPolo,
+      tipo: campus.tipo,
       cidade: campus.cidade,
       estado: campus.estado,
       endereco: campus.endereco,
@@ -180,10 +189,15 @@ export const CampiView = ({initialCampi, initialCursos}: CampiViewProps) => {
               <Card key={campus.id}>
                 <CardContent className="flex flex-col justify-between gap-4">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="rounded bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-bold text-primary">
-                        Polo MEC: {campus.codigoPolo}
-                      </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={campus.tipo === "POLO" ? "info" : "secondary"}>
+                          {TIPO_CAMPUS_LABEL[campus.tipo]}
+                        </Badge>
+                        <span className="rounded bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-bold text-primary">
+                          {campus.codigoPolo}
+                        </span>
+                      </div>
                       <span className="font-mono text-xs text-muted-foreground">
                         {campus.cidade} - {campus.estado}
                       </span>
@@ -230,11 +244,31 @@ export const CampiView = ({initialCampi, initialCursos}: CampiViewProps) => {
           <DialogHeader>
             <DialogTitle>{editing ? "Editar campus" : "Cadastrar campus ou polo"}</DialogTitle>
             <DialogDescription>
-              Credenciamento de unidade no livro acadêmico do OpenSGA.
+              Campus presencial (sede) ou polo de apoio EAD credenciado no MEC.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form className="space-y-4" onSubmit={onSubmit}>
+              <FormField
+                control={form.control}
+                name="tipo"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Tipo da unidade</FormLabel>
+                    <FormControl>
+                      <AdminSelect
+                        items={tiposCampus.map((tipo) => ({
+                          value: tipo,
+                          label: TIPO_CAMPUS_LABEL[tipo],
+                        }))}
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="nome"
@@ -254,7 +288,7 @@ export const CampiView = ({initialCampi, initialCursos}: CampiViewProps) => {
                   name="codigoPolo"
                   render={({field}) => (
                     <FormItem>
-                      <FormLabel>Código do polo</FormLabel>
+                      <FormLabel>Código da unidade</FormLabel>
                       <FormControl>
                         <Input placeholder="POLO-CAR" {...field} />
                       </FormControl>
