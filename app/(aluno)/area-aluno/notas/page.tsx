@@ -1,18 +1,17 @@
-import { requireAlunoSession } from "@/lib/auth/require-aluno-session";
+import {NotasView} from "@/components/aluno/notas-view";
+import {getPortalContexto} from "@/lib/api/fetch-generated";
+import {requireAlunoSession} from "@/lib/auth/require-aluno-session";
 
-const NotasAlunoPage = async () => {
+interface NotasAlunoPageProps {
+  searchParams: Promise<{alunoId?: string}>;
+}
+
+const NotasAlunoPage = async ({searchParams}: NotasAlunoPageProps) => {
   await requireAlunoSession();
+  const {alunoId} = await searchParams;
+  const contexto = await getPortalContexto(alunoId);
 
-  return (
-    <div className="flex flex-col gap-3">
-      <h1 className="font-heading text-2xl font-medium text-foreground">
-        Notas e frequência
-      </h1>
-      <p className="text-muted-foreground">
-        Acompanhamento acadêmico do aluno.
-      </p>
-    </div>
-  );
+  return <NotasView initialData={contexto} />;
 };
 
 export default NotasAlunoPage;

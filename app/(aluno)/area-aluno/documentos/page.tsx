@@ -1,17 +1,17 @@
-import {DashboardView} from "@/components/aluno/dashboard-view";
+import {DocumentosView} from "@/components/aluno/documentos-view";
 import {getPortalContexto} from "@/lib/api/fetch-generated";
 import {requireAlunoSession} from "@/lib/auth/require-aluno-session";
 
-interface DashboardAlunoPageProps {
+interface DocumentosAlunoPageProps {
   searchParams: Promise<{alunoId?: string}>;
 }
 
-const DashboardAlunoPage = async ({searchParams}: DashboardAlunoPageProps) => {
+const DocumentosAlunoPage = async ({searchParams}: DocumentosAlunoPageProps) => {
   await requireAlunoSession();
   const {alunoId} = await searchParams;
   const contexto = await getPortalContexto(alunoId);
 
-  return <DashboardView initialData={contexto} />;
+  return <DocumentosView initialData={contexto} />;
 };
 
-export default DashboardAlunoPage;
+export default DocumentosAlunoPage;

@@ -29,6 +29,16 @@ export interface DeleteResponse {
   id: string;
 }
 
+export interface PortalDependente {
+  id: string;
+  nome: string;
+  ra: string;
+  curso: string;
+  periodo: number;
+  statusMatricula: StatusMatricula;
+  avatarUrl: string | null;
+}
+
 export interface MeProfile {
   id: string;
   nome: string;
@@ -39,6 +49,7 @@ export interface MeProfile {
   ativo: boolean;
   aluno: {id: string; ra: string} | null;
   professor: {id: string; matricula: string; titulacao: string} | null;
+  dependentes: PortalDependente[];
 }
 
 export interface DashboardPeriodQuery {

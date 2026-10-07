@@ -5,7 +5,9 @@ import {useMutation, useQuery} from "@tanstack/react-query";
 import {
   addComponenteMatriz,
   avaliarDiario,
+  changePassword,
   createAdminUser,
+  createPortalReclamacao,
   createCampus,
   createComunicado,
   createCurso,
@@ -46,6 +48,7 @@ import {
   getMatriz,
   getMatrizes,
   getMe,
+  getPortalContexto,
   getPrecos,
   getProfessores,
   getReclamacoes,
@@ -66,7 +69,9 @@ import {
   type AdminDashboard,
   type AuthRole,
   type CatalogoCurso,
+  type ChangePasswordInput,
   type CreateAdminInput,
+  type CreatePortalReclamacaoInput,
   type CreateCampusInput,
   type CreateComunicadoInput,
   type CreateCursoInput,
@@ -81,6 +86,7 @@ import {
   type FecharSemestreInput,
   type LoginInput,
   type MeProfile,
+  type PortalContexto,
   type ProfessorDashboard,
   type StatusFatura,
   type StatusMatricula,
@@ -122,6 +128,24 @@ export const useGetMe = (options?: {query?: {initialData?: MeProfile}}) =>
     queryFn: getMe,
     initialData: options?.query?.initialData,
   });
+
+export const getGetPortalContextoQueryKey = (alunoId?: string) =>
+  ["/api/v1/portal/contexto", alunoId] as const;
+export const useGetPortalContexto = (options?: {
+  alunoId?: string;
+  query?: {initialData?: PortalContexto};
+}) =>
+  useQuery({
+    queryKey: getGetPortalContextoQueryKey(options?.alunoId),
+    queryFn: () => getPortalContexto(options?.alunoId),
+    initialData: options?.query?.initialData,
+  });
+
+export const useCreatePortalReclamacao = () =>
+  useMutation({mutationFn: (data: CreatePortalReclamacaoInput) => createPortalReclamacao(data)});
+
+export const useChangePassword = () =>
+  useMutation({mutationFn: (data: ChangePasswordInput) => changePassword(data)});
 
 export const getGetDashboardAdminQueryKey = (query?: DashboardPeriodQuery) =>
   ["/api/v1/dashboard/admin", query] as const;

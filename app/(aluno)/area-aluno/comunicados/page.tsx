@@ -1,17 +1,17 @@
-import {DashboardView} from "@/components/aluno/dashboard-view";
+import {ComunicadosView} from "@/components/aluno/comunicados-view";
 import {getPortalContexto} from "@/lib/api/fetch-generated";
 import {requireAlunoSession} from "@/lib/auth/require-aluno-session";
 
-interface DashboardAlunoPageProps {
+interface ComunicadosAlunoPageProps {
   searchParams: Promise<{alunoId?: string}>;
 }
 
-const DashboardAlunoPage = async ({searchParams}: DashboardAlunoPageProps) => {
+const ComunicadosAlunoPage = async ({searchParams}: ComunicadosAlunoPageProps) => {
   await requireAlunoSession();
   const {alunoId} = await searchParams;
   const contexto = await getPortalContexto(alunoId);
 
-  return <DashboardView initialData={contexto} />;
+  return <ComunicadosView initialData={contexto} />;
 };
 
-export default DashboardAlunoPage;
+export default ComunicadosAlunoPage;

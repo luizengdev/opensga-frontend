@@ -1,6 +1,7 @@
 import {requestApi} from "@/lib/api/request";
 
 export * from "./admin";
+export * from "./portal";
 export * from "./types";
 
 export type CatalogoModalidade = "PRESENCIAL" | "SEMIPRESENCIAL" | "EAD";
