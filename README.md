@@ -4,7 +4,7 @@
 
 Sistema de Gestão Acadêmica para IES brasileiras — projeto de estudo profissional.
 
-Portal unificado: site institucional, inscrição pública, secretaria administrativa e espaço do docente. Consome a [OpenSGA API](https://github.com/luizengdev/opensga-api).
+Portal unificado: site institucional, inscrição pública, secretaria administrativa, espaço do docente e portal do aluno/responsável. Consome a [OpenSGA API](https://github.com/luizengdev/opensga-api).
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -112,9 +112,9 @@ O seed monta campi `SEDE-REC` / `POLO-EAD`, 10 cursos, matrizes 2026.1, turmas, 
 | Auth | `/login-admin`, `/login-aluno` | público (redireciona se a sessão já vale) |
 | Secretaria | `/area-admin/dashboard`, turmas, matrizes, disciplinas, cursos, campi, matrículas, usuários, preços, faturas, comunicados, ouvidoria | `ADMIN` |
 | Docente | dashboard, turmas/diário, comunicados (leitura) | `PROFESSOR` |
-| Aluno | `/area-aluno/dashboard`, `/area-aluno/notas` | `ALUNO` / `RESPONSAVEL` (esqueleto) |
+| Aluno / responsável | `/area-aluno/dashboard`, notas, curso, matrícula, faturas, documentos, comunicados, ouvidoria, perfil | `ALUNO` / `RESPONSAVEL` |
 
-O produto atual prioriza o portal interno (`ADMIN` / `PROFESSOR`) e a inscrição pública. O self-service do aluno ainda é placeholder.
+O produto atual cobre o portal interno (`ADMIN` / `PROFESSOR`), a inscrição pública e o self-service do aluno/responsável via `GET /portal/contexto` (sem CRUD desses papéis no front).
 
 ---
 
