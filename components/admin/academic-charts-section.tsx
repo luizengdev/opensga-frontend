@@ -86,7 +86,7 @@ export const AcademicChartsSection = ({
               Recebíveis Stripe
             </TabsTrigger>
             <TabsTrigger className="text-xs" value="extensao">
-              Auditoria MEC (≥10%)
+              Auditoria MEC
             </TabsTrigger>
           </TabsList>
         </Tabs>

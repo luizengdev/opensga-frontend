@@ -2,6 +2,7 @@ import {AlertTriangle, CheckCircle2} from "lucide-react";
 
 import {Card, CardContent} from "@/components/ui/card";
 import {chExtensaoDaAuditoria} from "@/lib/academic/carga-horaria";
+import {REGULAMENTO_PADRAO} from "@/lib/academic/regulamento";
 import {scaleExtensaoBar} from "@/lib/admin/academic-charts";
 import {formatPercent} from "@/lib/admin/format";
 import type {AuditoriaMec} from "@/lib/api/fetch-generated";
@@ -14,6 +15,9 @@ export const AcademicChartExtensao = ({auditorias}: AcademicChartExtensaoProps) 
   const conformes = auditorias.filter((item) => item.cumpreRegra10PorcentoExtensao).length;
   const total = auditorias.length;
   const pdiOk = total > 0 && conformes === total;
+  const metaExtensao =
+    auditorias[0]?.percentualMinimoExtensao ?? REGULAMENTO_PADRAO.percentualMinimoExtensao;
+  const marcaMeta = Math.min(metaExtensao * 6, 100);
 
   return (
     <Card>
@@ -21,7 +25,10 @@ export const AcademicChartExtensao = ({auditorias}: AcademicChartExtensaoProps) 
         <div className="space-y-1 border-b border-border pb-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold">Termômetro de curricularização da extensão</span>
-            <span className="font-mono text-[11px] font-bold text-foreground">Meta legal: ≥ 10,0%</span>
+            <span className="font-mono text-[11px] font-bold text-foreground">
+              Meta institucional: ≥ {metaExtensao.toFixed(1).replace(".", ",")}
+              %
+            </span>
           </div>
           <p className="text-[11px] text-muted-foreground">
             Resolução CNE/CES nº 7/2018: percentual da carga horária dedicado à extensão universitária.
@@ -60,8 +67,8 @@ export const AcademicChartExtensao = ({auditorias}: AcademicChartExtensaoProps) 
                   />
                   <div
                     className="absolute inset-y-0 w-0.5 bg-foreground/60"
-                    style={{left: "60%"}}
-                    title="Meta legal MEC: 10%"
+                    style={{left: `${marcaMeta}%`}}
+                    title={`Meta institucional: ${metaExtensao}%`}
                   />
                 </div>
               </div>

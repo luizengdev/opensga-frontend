@@ -29,12 +29,28 @@ export const frequenciaPercentual = ({
   return Math.max(0, Math.round(((chTotal - totalFaltas) / chTotal) * 100));
 };
 
-export const isRfPorFalta = ({totalFaltas, chTotal}: {totalFaltas: number; chTotal: number}) => {
-  return totalFaltas > limiteFaltasDaDisciplina(chTotal);
+export const isRfPorFalta = ({
+  totalFaltas,
+  chTotal,
+  limiteFaltasPercentual,
+}: {
+  totalFaltas: number;
+  chTotal: number;
+  limiteFaltasPercentual?: number;
+}) => {
+  return totalFaltas > limiteFaltasDaDisciplina(chTotal, limiteFaltasPercentual);
 };
 
-export const isRiscoRf = ({totalFaltas, chTotal}: {totalFaltas: number; chTotal: number}) => {
-  const limite = limiteFaltasDaDisciplina(chTotal);
+export const isRiscoRf = ({
+  totalFaltas,
+  chTotal,
+  limiteFaltasPercentual,
+}: {
+  totalFaltas: number;
+  chTotal: number;
+  limiteFaltasPercentual?: number;
+}) => {
+  const limite = limiteFaltasDaDisciplina(chTotal, limiteFaltasPercentual);
   return totalFaltas > limite || totalFaltas >= Math.max(0, limite - 2);
 };
 

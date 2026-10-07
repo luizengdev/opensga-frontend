@@ -23,6 +23,7 @@ const adminNavGroups: AdminNavGroup[] = [
       {label: "Disciplinas Globais", href: "/area-admin/disciplinas"},
       {label: "Cursos Ofertados", href: "/area-admin/cursos"},
       {label: "Campi e Polos", href: "/area-admin/campi"},
+      {label: "Parametrizações", href: "/area-admin/parametrizacoes"},
     ],
   },
   {
@@ -92,6 +93,8 @@ export const getAdminBreadcrumb = (pathname: string, role: SessionRole) => {
       return "Cursos de Graduação";
     case "campi":
       return "Campi e Polos";
+    case "parametrizacoes":
+      return "Parametrizações";
     case "usuarios":
       return "Gestão de Usuários";
     case "financeiro":

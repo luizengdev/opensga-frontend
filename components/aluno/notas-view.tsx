@@ -8,6 +8,8 @@ import {AlunoPageHeader} from "@/components/aluno/aluno-page-header";
 import {AlunoStatusBadge} from "@/components/aluno/aluno-status-badge";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {limiteFaltasDaDisciplina} from "@/lib/academic/carga-horaria";
+import {formatCorteNota, formatPercentualRegra, REGULAMENTO_PADRAO} from "@/lib/academic/regulamento";
+import {useGetParametrizacoes} from "@/lib/api/rc-generated";
 import {
   formatNota,
   frequenciaPercentual,
@@ -23,6 +25,10 @@ interface NotasViewProps {
 }
 
 export const NotasView = ({initialData}: NotasViewProps) => {
+  const {data: parametros} = useGetParametrizacoes();
+  const corteDireta = parametros?.corteAprovacaoDireta ?? REGULAMENTO_PADRAO.corteAprovacaoDireta;
+  const corteFinal = parametros?.corteMediaFinal ?? REGULAMENTO_PADRAO.corteMediaFinal;
+  const limiteFaltasPct = parametros?.limiteFaltasPercentual ?? REGULAMENTO_PADRAO.limiteFaltasPercentual;
   const {contexto} = usePortalAluno(initialData);
   const {matricula, disciplinas} = contexto;
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string | null>(disciplinas[0]?.id ?? null);
@@ -67,15 +73,18 @@ export const NotasView = ({initialData}: NotasViewProps) => {
         <div className="grid grid-cols-1 gap-3 text-xs leading-relaxed font-medium text-muted-foreground md:grid-cols-3">
           <div className="rounded-lg border border-border bg-muted/60 p-3.5">
             <span className="mb-1 block font-bold text-foreground">1. Frequência é soberana</span>
-            Faltas acima de 25% da CH geram RF e zeramento de CH, independentemente das notas.
+            Faltas acima de {formatPercentualRegra(limiteFaltasPct)} da CH geram RF e zeramento de CH,
+            independentemente das notas.
           </div>
           <div className="rounded-lg border border-border bg-muted/60 p-3.5">
             <span className="mb-1 block font-bold text-foreground">2. Nota semestral (NS)</span>
-            NS = MAX(AV, AVS), nulos ignorados. Aprovação direta no fechamento se NS ≥ 6,0 e frequência regular.
+            NS = MAX(AV, AVS), nulos ignorados. Aprovação direta no fechamento se NS ≥{" "}
+            {formatCorteNota(corteDireta)} e frequência regular.
           </div>
           <div className="rounded-lg border border-border bg-muted/60 p-3.5">
             <span className="mb-1 block font-bold text-foreground">3. Prova final (AV3)</span>
-            Com NS &lt; 6,0 e presença regular, MF = (NS + AV3) / 2. Corte 5,0. Sem AV3 obrigatória o semestre não fecha.
+            Com NS &lt; {formatCorteNota(corteDireta)} e presença regular, MF = (NS + AV3) / 2. Corte{" "}
+            {formatCorteNota(corteFinal)}. Sem AV3 obrigatória o semestre não fecha.
           </div>
         </div>
       </div>
@@ -111,14 +120,22 @@ export const NotasView = ({initialData}: NotasViewProps) => {
             </TableHeader>
             <TableBody>
               {disciplinas.map((disciplina) => {
-                const limite = limiteFaltasDaDisciplina(disciplina.chTotal);
+                const limite = limiteFaltasDaDisciplina(disciplina.chTotal, limiteFaltasPct);
                 const ns = notaSemestralVisivel(disciplina);
                 const frequencia = frequenciaPercentual({
                   totalFaltas: disciplina.totalFaltas,
                   chTotal: disciplina.chTotal,
                 });
-                const emRisco = isRiscoRf({totalFaltas: disciplina.totalFaltas, chTotal: disciplina.chTotal});
-                const rf = isRfPorFalta({totalFaltas: disciplina.totalFaltas, chTotal: disciplina.chTotal});
+                const emRisco = isRiscoRf({
+                  totalFaltas: disciplina.totalFaltas,
+                  chTotal: disciplina.chTotal,
+                  limiteFaltasPercentual: limiteFaltasPct,
+                });
+                const rf = isRfPorFalta({
+                  totalFaltas: disciplina.totalFaltas,
+                  chTotal: disciplina.chTotal,
+                  limiteFaltasPercentual: limiteFaltasPct,
+                });
                 const isSelected = disciplina.id === selected?.id;
 
                 return (

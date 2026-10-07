@@ -1,7 +1,11 @@
+import {REGULAMENTO_PADRAO} from "@/lib/academic/regulamento";
 import type {ModalidadeCurso} from "@/lib/api/fetch-generated";
 
-export const limiteFaltasDaDisciplina = (chTotal: number) => {
-  return Math.max(0, Math.floor(chTotal * 0.25));
+export const limiteFaltasDaDisciplina = (
+  chTotal: number,
+  percentual = REGULAMENTO_PADRAO.limiteFaltasPercentual,
+) => {
+  return Math.max(0, Math.floor(chTotal * (percentual / 100)));
 };
 
 export const splitCargaHoraria = (chTotal: number, modalidade: ModalidadeCurso) => {

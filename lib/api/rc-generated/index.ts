@@ -49,6 +49,7 @@ import {
   getMatriz,
   getMatrizes,
   getMe,
+  getParametrizacoes,
   getPortalContexto,
   getPortalDocumentos,
   emitirPortalDocumento,
@@ -72,6 +73,7 @@ import {
   updatePreco,
   updateProfessor,
   updateModeloDocumento,
+  updateParametrizacoes,
   updateUser,
   type AddComponenteInput,
   type AdminDashboard,
@@ -95,6 +97,7 @@ import {
   type FecharSemestreInput,
   type LoginInput,
   type MeProfile,
+  type Parametrizacoes,
   type PortalContexto,
   type ProfessorDashboard,
   type StatusFatura,
@@ -102,6 +105,7 @@ import {
   type TransferenciaInternaInput,
   type UpdateGradesInput,
   type UpdateModeloDocumentoInput,
+  type UpdateParametrizacoesInput,
   type UpdateProfessorInput,
   type UpdateUserInput,
 } from "@/lib/api/fetch-generated";
@@ -478,3 +482,15 @@ export const useResponderReclamacao = () =>
     mutationFn: (payload: {id: string; resposta: string}) => responderReclamacao(payload),
   });
 export const useFecharReclamacao = () => useMutation({mutationFn: fecharReclamacao});
+
+export const getGetParametrizacoesQueryKey = () => ["/api/v1/parametrizacoes"] as const;
+export const useGetParametrizacoes = (options?: {initialData?: Parametrizacoes}) =>
+  useQuery({
+    queryKey: getGetParametrizacoesQueryKey(),
+    queryFn: getParametrizacoes,
+    initialData: options?.initialData,
+  });
+export const useUpdateParametrizacoes = () =>
+  useMutation({
+    mutationFn: (data: UpdateParametrizacoesInput) => updateParametrizacoes(data),
+  });

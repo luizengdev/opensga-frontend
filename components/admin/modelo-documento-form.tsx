@@ -41,7 +41,7 @@ interface ModeloDocumentoFormProps {
 }
 
 const PLACEHOLDERS =
-  "{{aluno.nome}} {{aluno.cpf}} {{aluno.ra}} {{curso.nome}} {{curso.modalidade}} {{campus.nome}} {{campus.codigoPolo}} {{periodoAtual}} {{semestreIngresso}} {{dataEmissao}} {{codigoAutenticacao}} {{chIntegralizada}} {{chTotalCurso}}";
+  "{{aluno.nome}} {{aluno.cpf}} {{aluno.ra}} {{curso.nome}} {{curso.modalidade}} {{campus.nome}} {{campus.codigoPolo}} {{periodoAtual}} {{semestreIngresso}} {{dataEmissao}} {{codigoAutenticacao}} {{chIntegralizada}} {{chTotalCurso}} {{ies.nome}} {{ies.sigla}} {{ies.mantenedora}} {{ies.cnpj}}";
 
 export const ModeloDocumentoForm = ({modelo}: ModeloDocumentoFormProps) => {
   const queryClient = useQueryClient();

@@ -11,13 +11,15 @@ import {
   getFaturas,
   getMatrizes,
   getMe,
+  getParametrizacoes,
   getTurmas,
 } from "@/lib/api/fetch-generated";
 import {requireAdminSession} from "@/lib/auth/require-admin-session";
 
 const DashboardAdminPage = async () => {
   const session = await requireAdminSession();
-  const periodo = getPeriodoLetivoAtual();
+  const parametros = await getParametrizacoes();
+  const periodo = getPeriodoLetivoAtual(parametros);
 
   if (session.role === "PROFESSOR") {
     const [dashboard, turmas, diarios, me, comunicados] = await Promise.all([

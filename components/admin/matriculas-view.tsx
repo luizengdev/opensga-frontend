@@ -53,6 +53,7 @@ import {
   useGetCursos,
   useGetMatriculas,
   useGetMatrizes,
+  useGetParametrizacoes,
   useUpdateMatriculaStatus,
 } from "@/lib/api/rc-generated";
 
@@ -114,7 +115,8 @@ export const MatriculasView = ({
   initialMatrizes,
 }: MatriculasViewProps) => {
   const queryClient = useQueryClient();
-  const periodo = getPeriodoLetivoAtual();
+  const {data: parametros} = useGetParametrizacoes();
+  const periodo = getPeriodoLetivoAtual(parametros);
   const {data: matriculas} = useGetMatriculas({initialData: initialMatriculas});
   const {data: cursos} = useGetCursos({initialData: initialCursos});
   const {data: matrizes} = useGetMatrizes({initialData: initialMatrizes});

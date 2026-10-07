@@ -360,7 +360,7 @@ export const DashboardAdminView = ({
             <div className="mt-4 flex items-center justify-between rounded-[calc(var(--radius)-4px)] border border-border bg-muted/40 p-3 text-xs">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Layers className="size-4 text-primary" />
-                Auditoria regulamentar MEC: Resolução CNE/CES nº 7/2018 (extensão ≥ 10%)
+                Auditoria regulamentar MEC: Resolução CNE/CES nº 7/2018 (extensão mínima institucional)
               </div>
               <Button nativeButton={false} render={<Link href="/area-admin/matrizes" />} size="sm" variant="outline">
                 Consultar matrizes
