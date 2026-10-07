@@ -23,17 +23,14 @@ const LoginAlunoPage = async () => {
         </div>
 
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-          <p className="font-mono text-[11px] tracking-wider text-muted-foreground uppercase">
-            Área do aluno
-          </p>
+          <p className="font-mono text-[11px] tracking-wider text-muted-foreground uppercase">Área do aluno</p>
           <h1 className="mt-3 font-heading text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
             Olá.
             <br />
             Que bom ter você de volta.
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            Entre com e-mail, CPF ou RA. Responsáveis do aluno menor usam o
-            mesmo acesso.
+            Entre com e-mail, CPF ou RA. Responsáveis do aluno menor usam o mesmo acesso.
           </p>
 
           <div className="mt-8">
@@ -41,17 +38,8 @@ const LoginAlunoPage = async () => {
           </div>
 
           <div className="mt-8 flex flex-col gap-1">
-            <Link
-              className={cn(buttonVariants({variant: "link"}), "h-auto justify-start px-0")}
-              href="/inscricao"
-            >
+            <Link className={cn(buttonVariants({variant: "link"}), "h-auto justify-start px-0")} href="/inscricao">
               Ainda não tem matrícula? Inscreva-se
-            </Link>
-            <Link
-              className={cn(buttonVariants({variant: "link"}), "h-auto justify-start px-0")}
-              href="/login-admin"
-            >
-              Acesso da secretaria e docentes
             </Link>
           </div>
         </div>
