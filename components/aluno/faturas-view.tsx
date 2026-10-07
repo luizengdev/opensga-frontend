@@ -11,6 +11,7 @@ import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {formatCurrencyBrl, formatDateBr} from "@/lib/admin/format";
 import {firstName} from "@/lib/aluno/labels";
+import {useEmitirDocumento} from "@/lib/aluno/use-emitir-documento";
 import {usePortalAluno} from "@/lib/aluno/use-portal-contexto";
 import type {PortalContexto, PortalFatura} from "@/lib/api/fetch-generated";
 
@@ -29,10 +30,10 @@ const openPayment = (fatura: PortalFatura) => {
 };
 
 export const FaturasView = ({initialData}: FaturasViewProps) => {
-  const {contexto} = usePortalAluno(initialData);
+  const {alunoId, contexto} = usePortalAluno(initialData);
+  const {documento, emitir, fechar, isPending} = useEmitirDocumento();
   const {faturas, profile} = contexto;
   const [filter, setFilter] = useState<FiltroFatura>("todas");
-  const [quitacaoAberta, setQuitacaoAberta] = useState(false);
   const faturaAberta = faturas.find((fatura) => fatura.status === "PENDENTE" || fatura.status === "ATRASADA");
   const totalPago = faturas.filter((fatura) => fatura.status === "PAGA").reduce((soma, fatura) => soma + fatura.valor, 0);
   const faturasFiltradas = faturas.filter((fatura) => {
@@ -51,9 +52,13 @@ export const FaturasView = ({initialData}: FaturasViewProps) => {
     <div className="space-y-8 animate-in fade-in duration-200">
       <AlunoPageHeader
         actions={
-          <Button onClick={() => setQuitacaoAberta(true)} variant="outline">
+          <Button
+            disabled={isPending}
+            onClick={() => emitir({tipo: "QUITACAO_FINANCEIRA", alunoId})}
+            variant="outline"
+          >
             <Receipt className="size-4" />
-            Declaração de quitação
+            {isPending ? "Emitindo…" : "Declaração de quitação"}
           </Button>
         }
         description="Consulta de vencimentos, histórico de quitações e pagamento via Stripe quando houver valor devido."
@@ -162,11 +167,7 @@ export const FaturasView = ({initialData}: FaturasViewProps) => {
           </Table>
         </div>
       )}
-      <DocumentViewerDialog
-        contexto={contexto}
-        onClose={() => setQuitacaoAberta(false)}
-        type={quitacaoAberta ? "quitacao_financeira" : null}
-      />
+      <DocumentViewerDialog documento={documento} onClose={fechar} />
     </div>
   );
 };

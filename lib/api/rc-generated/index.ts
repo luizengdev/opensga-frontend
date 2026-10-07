@@ -50,6 +50,9 @@ import {
   getMatrizes,
   getMe,
   getPortalContexto,
+  getPortalDocumentos,
+  emitirPortalDocumento,
+  getModelosDocumento,
   getPrecos,
   getProfessores,
   getReclamacoes,
@@ -67,6 +70,7 @@ import {
   updateMatriculaStatus,
   updatePreco,
   updateProfessor,
+  updateModeloDocumento,
   updateUser,
   type AddComponenteInput,
   type AdminDashboard,
@@ -86,6 +90,7 @@ import {
   type CreateProfessorInput,
   type CreateTurmaInput,
   type DashboardPeriodQuery,
+  type EmitirDocumentoInput,
   type FecharSemestreInput,
   type LoginInput,
   type MeProfile,
@@ -95,6 +100,7 @@ import {
   type StatusMatricula,
   type TransferenciaInternaInput,
   type UpdateGradesInput,
+  type UpdateModeloDocumentoInput,
   type UpdateProfessorInput,
   type UpdateUserInput,
 } from "@/lib/api/fetch-generated";
@@ -147,6 +153,18 @@ export const useGetPortalContexto = (options?: {
 
 export const useCreatePortalReclamacao = () =>
   useMutation({mutationFn: (data: CreatePortalReclamacaoInput) => createPortalReclamacao(data)});
+
+export const getGetPortalDocumentosQueryKey = () => ["/api/v1/portal/documentos"] as const;
+export const useGetPortalDocumentos = (options?: {
+  initialData?: Awaited<ReturnType<typeof getPortalDocumentos>>;
+}) =>
+  useQuery({
+    queryKey: getGetPortalDocumentosQueryKey(),
+    queryFn: getPortalDocumentos,
+    initialData: options?.initialData,
+  });
+export const useEmitirPortalDocumento = () =>
+  useMutation({mutationFn: (data: EmitirDocumentoInput) => emitirPortalDocumento(data)});
 
 export const useChangePassword = () =>
   useMutation({mutationFn: (data: ChangePasswordInput) => changePassword(data)});
@@ -363,6 +381,21 @@ export const useUpdateMatriculaStatus = () =>
     mutationFn: (payload: {id: string; status: StatusMatricula}) => updateMatriculaStatus(payload),
   });
 export const useDeleteMatricula = () => useMutation({mutationFn: deleteMatricula});
+
+export const getGetModelosDocumentoQueryKey = () => ["/api/v1/documentos/modelos"] as const;
+export const useGetModelosDocumento = (options?: {
+  initialData?: Awaited<ReturnType<typeof getModelosDocumento>>;
+}) =>
+  useQuery({
+    queryKey: getGetModelosDocumentoQueryKey(),
+    queryFn: getModelosDocumento,
+    initialData: options?.initialData,
+  });
+export const useUpdateModeloDocumento = () =>
+  useMutation({
+    mutationFn: (payload: {id: string; data: UpdateModeloDocumentoInput}) =>
+      updateModeloDocumento(payload),
+  });
 
 export const getGetTransferenciaPreviewQueryKey = (params: {
   id: string;

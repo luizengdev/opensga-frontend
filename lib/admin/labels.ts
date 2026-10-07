@@ -6,6 +6,7 @@ import type {
   StatusReclamacao,
   TipoCampus,
   TipoComponente,
+  TipoDocumento,
   TipoEntrega,
   TipoReclamacao,
 } from "@/lib/api/fetch-generated";
@@ -67,6 +68,13 @@ export const TIPO_COMPONENTE_LABEL: Record<TipoComponente, string> = {
   ELETIVA_TRILHA: "Eletiva de trilha",
   EXTENSAO: "Extensão",
   OPTATIVO: "Optativo",
+};
+
+export const TIPO_DOCUMENTO_LABEL: Record<TipoDocumento, string> = {
+  DECLARACAO_MATRICULA: "Declaração de matrícula",
+  HISTORICO_PARCIAL: "Histórico escolar parcial",
+  QUITACAO_FINANCEIRA: "Quitação financeira",
+  CARTEIRINHA_ESTUDANTIL: "Carteirinha estudantil",
 };
 
 export const TIPO_ENTREGA_LABEL: Record<TipoEntrega, string> = {

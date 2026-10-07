@@ -114,7 +114,7 @@ O seed monta `SEDE-REC` (campus presencial) e `POLO-EAD` (polo EAD), 10 cursos, 
 | Docente | dashboard, turmas/diário, comunicados (leitura) | `PROFESSOR` |
 | Aluno / responsável | `/area-aluno/dashboard`, notas, curso, matrícula, faturas, documentos, comunicados, ouvidoria, perfil | `ALUNO` / `RESPONSAVEL` |
 
-O produto atual cobre o portal interno (`ADMIN` / `PROFESSOR`), a inscrição pública e o self-service do aluno/responsável via `GET /portal/contexto` (sem CRUD desses papéis no front).
+O produto atual cobre o portal interno (`ADMIN` / `PROFESSOR`), a inscrição pública e o self-service do aluno/responsável via `GET /portal/contexto` e emissão de documentos (`GET /portal/documentos`, `POST /portal/documentos/emitir`) — sem CRUD desses papéis no front. Modelos oficiais ficam em `/area-admin/emissao-documentos`.
 
 ---
 

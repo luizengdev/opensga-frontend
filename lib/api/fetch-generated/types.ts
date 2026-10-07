@@ -26,6 +26,11 @@ export type TipoComponente =
 export type TipoEntrega = "PRESENCIAL_FISICO" | "SINCRONO_MEDIADO" | "ASSINCRONO_DIGITAL";
 export type IntervaloCobranca = "MONTH";
 export type StatusDisciplina = "EM_ABERTO" | "APROVADO" | "RF" | "RN";
+export type TipoDocumento =
+  | "DECLARACAO_MATRICULA"
+  | "HISTORICO_PARCIAL"
+  | "QUITACAO_FINANCEIRA"
+  | "CARTEIRINHA_ESTUDANTIL";
 
 export interface DeleteResponse {
   id: string;
@@ -456,6 +461,24 @@ export interface TransferenciaInterna extends TransferenciaPreview {
 export interface TransferenciaInternaInput {
   cursoId: string;
   matrizCurricularId: string;
+}
+
+export interface ModeloDocumento {
+  id: string;
+  tipo: TipoDocumento;
+  titulo: string;
+  descricao: string;
+  finalidade: string;
+  corpo: string;
+  ativo: boolean;
+}
+
+export interface UpdateModeloDocumentoInput {
+  titulo?: string;
+  descricao?: string;
+  finalidade?: string;
+  corpo?: string;
+  ativo?: boolean;
 }
 
 export interface PrecoCurso {

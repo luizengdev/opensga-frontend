@@ -39,6 +39,8 @@ import type {
   StatusFatura,
   StatusMatricula,
   StatusReclamacao,
+  ModeloDocumento,
+  UpdateModeloDocumentoInput,
   TransferenciaInterna,
   TransferenciaInternaInput,
   TransferenciaPreview,
@@ -170,6 +172,20 @@ export const updateMatriculaStatus = async ({id, status}: {id: string; status: S
   requestApi(`/api/v1/matriculas/${id}/status`, {method: "PATCH", body: JSON.stringify({status})});
 export const deleteMatricula = async (id: string) =>
   requestApi<DeleteResponse>(`/api/v1/matriculas/${id}`, {method: "DELETE"});
+
+export const getModelosDocumento = async () =>
+  requestApi<ModeloDocumento[]>("/api/v1/documentos/modelos");
+export const updateModeloDocumento = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: UpdateModeloDocumentoInput;
+}) =>
+  requestApi<ModeloDocumento>(`/api/v1/documentos/modelos/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 
 export const getTransferenciaPreview = async ({
   id,

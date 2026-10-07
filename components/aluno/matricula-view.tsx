@@ -1,6 +1,5 @@
 "use client";
 
-import {useState} from "react";
 import {FileCheck2, ShieldCheck} from "lucide-react";
 
 import {AlunoEmptyState} from "@/components/aluno/aluno-empty-state";
@@ -11,6 +10,7 @@ import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {MODALIDADE_LABEL, TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
 import {displayName} from "@/lib/aluno/labels";
+import {useEmitirDocumento} from "@/lib/aluno/use-emitir-documento";
 import {usePortalAluno} from "@/lib/aluno/use-portal-contexto";
 import type {PortalContexto} from "@/lib/api/fetch-generated";
 
@@ -19,8 +19,8 @@ interface MatriculaViewProps {
 }
 
 export const MatriculaView = ({initialData}: MatriculaViewProps) => {
-  const {contexto} = usePortalAluno(initialData);
-  const [documentoAberto, setDocumentoAberto] = useState(false);
+  const {alunoId, contexto} = usePortalAluno(initialData);
+  const {documento, emitir, fechar, isPending} = useEmitirDocumento();
   const {profile, matricula, disciplinas} = contexto;
 
   if (!matricula) {
@@ -44,8 +44,12 @@ export const MatriculaView = ({initialData}: MatriculaViewProps) => {
     <div className="space-y-8 animate-in fade-in duration-200">
       <AlunoPageHeader
         actions={
-          <Button onClick={() => setDocumentoAberto(true)} variant="outline">
-            Emitir declaração
+          <Button
+            disabled={isPending}
+            onClick={() => emitir({tipo: "DECLARACAO_MATRICULA", alunoId})}
+            variant="outline"
+          >
+            {isPending ? "Emitindo…" : "Emitir declaração"}
           </Button>
         }
         description="Identidade acadêmica, polo e disciplinas em que você está enturmado. Sem alteração de ciclo."
@@ -126,11 +130,7 @@ export const MatriculaView = ({initialData}: MatriculaViewProps) => {
           </TableBody>
         </Table>
       </div>
-      <DocumentViewerDialog
-        contexto={contexto}
-        onClose={() => setDocumentoAberto(false)}
-        type={documentoAberto ? "declaracao_matricula" : null}
-      />
+      <DocumentViewerDialog documento={documento} onClose={fechar} />
     </div>
   );
 };

@@ -30,6 +30,7 @@ const adminNavGroups: AdminNavGroup[] = [
     items: [
       {label: "Matrículas & RA", href: "/area-admin/matriculas"},
       {label: "Transferência Interna", href: "/area-admin/transferencia-interna"},
+      {label: "Emissão de Documentos", href: "/area-admin/emissao-documentos"},
       {label: "Gestão de Pessoas", href: "/area-admin/usuarios"},
     ],
   },
@@ -81,6 +82,8 @@ export const getAdminBreadcrumb = (pathname: string, role: SessionRole) => {
       return "Matrículas & RA";
     case "transferencia-interna":
       return "Transferência Interna";
+    case "emissao-documentos":
+      return "Emissão de Documentos";
     case "matrizes":
       return "Matrizes Curriculares & Auditoria MEC";
     case "disciplinas":

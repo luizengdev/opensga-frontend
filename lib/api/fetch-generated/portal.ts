@@ -9,6 +9,7 @@ import type {
   StatusMatricula,
   StatusReclamacao,
   TipoComponente,
+  TipoDocumento,
   TipoEntrega,
   TipoReclamacao,
 } from "./types";
@@ -119,8 +120,66 @@ export interface ChangePasswordInput {
   senhaNova: string;
 }
 
+export interface PortalDocumentoCatalogoItem {
+  id: string;
+  tipo: TipoDocumento;
+  titulo: string;
+  descricao: string;
+  finalidade: string;
+}
+
+export interface DocumentoEmitido {
+  tipo: TipoDocumento;
+  titulo: string;
+  corpo: string;
+  codigoAutenticacao: string;
+  emitidoEm: string;
+  aluno: {nome: string; cpf: string; ra: string; avatarUrl: string | null};
+  curso: {
+    nome: string;
+    modalidade: ModalidadeCurso;
+    campusNome: string;
+    codigoPolo: string;
+  };
+  periodoAtual: number;
+  semestreIngresso: string;
+  chIntegralizada: number;
+  chTotalCurso: number;
+  disciplinas: Array<{
+    codigo: string;
+    nome: string;
+    chTotal: number;
+    tipoEntrega: TipoEntrega;
+  }>;
+  matriz: Array<{
+    semestreIdeal: number;
+    codigo: string;
+    nome: string;
+    tipo: TipoComponente;
+    chTotal: number;
+    notaFinal: number | null;
+    statusDisciplina: StatusDisciplina | null;
+  }>;
+}
+
+export interface EmitirDocumentoInput {
+  tipo: TipoDocumento;
+  alunoId?: string;
+}
+
 export const getPortalContexto = async (alunoId?: string) => {
   return requestApi<PortalContexto>(`/api/v1/portal/contexto${toQueryString({alunoId})}`);
+};
+
+export const getPortalDocumentos = async () => {
+  return requestApi<PortalDocumentoCatalogoItem[]>("/api/v1/portal/documentos");
+};
+
+export const emitirPortalDocumento = async (data: EmitirDocumentoInput) => {
+  return requestApi<DocumentoEmitido>("/api/v1/portal/documentos/emitir", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 };
 
 export const createPortalReclamacao = async (data: CreatePortalReclamacaoInput) => {

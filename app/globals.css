@@ -205,3 +205,56 @@
 .font-serif {
   letter-spacing: -0.015em;
 }
+
+@media screen {
+  #documento-print-sheet {
+    position: fixed;
+    inset: auto;
+    left: 0;
+    top: 0;
+    width: 210mm;
+    pointer-events: none;
+    visibility: hidden;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 16mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body > *:not(#documento-print-sheet) {
+    display: none !important;
+  }
+
+  #documento-print-sheet {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #111 !important;
+    box-shadow: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  #documento-print-sheet table,
+  #documento-print-sheet tr {
+    break-inside: avoid;
+  }
+}
