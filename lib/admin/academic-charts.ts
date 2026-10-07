@@ -38,6 +38,54 @@ export const buildOcupacaoPorCampus = (turmas: Turma[] = [], campi: Campus[] = [
     .filter((polo) => polo.capacidade > 0);
 };
 
+export const buildOfertaPorCurso = (turmas: Turma[] = [], campi: Campus[] = []) => {
+  const listaTurmas = Array.isArray(turmas) ? turmas : [];
+  const campusPorId = new Map((Array.isArray(campi) ? campi : []).map((campus) => [campus.id, campus]));
+
+  const agrupado = listaTurmas.reduce((acc, turma) => {
+    const atual = acc.get(turma.curso.id);
+    const inscritos = turma.quantidadeDiarios ?? 0;
+    const campus = campusPorId.get(turma.campusId);
+
+    if (!atual) {
+      acc.set(turma.curso.id, {
+        cursoId: turma.curso.id,
+        nome: turma.curso.nome,
+        campusNome: campus?.nome ?? "",
+        quantidadeTurmas: 1,
+        inscritos,
+        capacidade: turma.capacidade,
+      });
+      return acc;
+    }
+
+    acc.set(turma.curso.id, {
+      ...atual,
+      quantidadeTurmas: atual.quantidadeTurmas + 1,
+      inscritos: atual.inscritos + inscritos,
+      capacidade: atual.capacidade + turma.capacidade,
+    });
+    return acc;
+  }, new Map<
+    string,
+    {
+      cursoId: string;
+      nome: string;
+      campusNome: string;
+      quantidadeTurmas: number;
+      inscritos: number;
+      capacidade: number;
+    }
+  >());
+
+  return [...agrupado.values()]
+    .map((curso) => ({
+      ...curso,
+      percentual: curso.capacidade > 0 ? Math.round((curso.inscritos / curso.capacidade) * 100) : 0,
+    }))
+    .sort((a, b) => b.quantidadeTurmas - a.quantidadeTurmas || a.nome.localeCompare(b.nome, "pt-BR"));
+};
+
 export const buildVolumeFinanceiro = (faturas: Fatura[] = []) => {
   const listaFaturas = Array.isArray(faturas) ? faturas : [];
   const liquidado = listaFaturas

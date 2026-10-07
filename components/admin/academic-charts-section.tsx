@@ -1,6 +1,5 @@
 "use client";
 
-import {cn} from "cn";
 import {BarChart3} from "lucide-react";
 import {useState} from "react";
 
@@ -8,7 +7,7 @@ import {AcademicChartExtensao} from "@/components/admin/academic-chart-extensao"
 import {AcademicChartFinanceiro} from "@/components/admin/academic-chart-financeiro";
 import {AcademicChartMatriculas} from "@/components/admin/academic-chart-matriculas";
 import {AcademicChartOcupacao} from "@/components/admin/academic-chart-ocupacao";
-import {Tabs, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {formatPeriodoLetivo} from "@/lib/academic/periodo-letivo";
 import {
   buildOcupacaoPorCampus,
@@ -49,8 +48,21 @@ export const AcademicChartsSection = ({
   const volume = buildVolumeFinanceiro(faturas ?? []);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col justify-between gap-3 pt-2 sm:flex-row sm:items-center">
+    <Tabs
+      className="gap-4 pt-2"
+      onValueChange={(value) => {
+        if (
+          value === "matriculas" ||
+          value === "ocupacao" ||
+          value === "financeiro" ||
+          value === "extensao"
+        ) {
+          setTab(value);
+        }
+      }}
+      value={tab}
+    >
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
             <BarChart3 className="size-4 text-primary" />
@@ -62,50 +74,34 @@ export const AcademicChartsSection = ({
             Retenção escolar, capacidade dos polos MEC, conciliação Stripe e extensão curricular.
           </p>
         </div>
-        <Tabs
-          onValueChange={(value) => {
-            if (
-              value === "matriculas" ||
-              value === "ocupacao" ||
-              value === "financeiro" ||
-              value === "extensao"
-            ) {
-              setTab(value);
-            }
-          }}
-          value={tab}
-        >
-          <TabsList className="h-auto w-full flex-wrap sm:w-fit">
-            <TabsTrigger className="text-xs" value="matriculas">
-              Matrículas
-            </TabsTrigger>
-            <TabsTrigger className="text-xs" value="ocupacao">
-              Ocupação dos polos
-            </TabsTrigger>
-            <TabsTrigger className="text-xs" value="financeiro">
-              Recebíveis Stripe
-            </TabsTrigger>
-            <TabsTrigger className="text-xs" value="extensao">
-              Auditoria MEC
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <TabsList className="h-auto w-full flex-wrap sm:w-fit">
+          <TabsTrigger className="text-xs" value="matriculas">
+            Matrículas
+          </TabsTrigger>
+          <TabsTrigger className="text-xs" value="ocupacao">
+            Ocupação dos polos
+          </TabsTrigger>
+          <TabsTrigger className="text-xs" value="financeiro">
+            Recebíveis Stripe
+          </TabsTrigger>
+          <TabsTrigger className="text-xs" value="extensao">
+            Auditoria MEC
+          </TabsTrigger>
+        </TabsList>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        <div className={cn("transition-opacity", tab === "matriculas" ? "ring-2 ring-ring/50 rounded-xl" : "opacity-70")}>
-          <AcademicChartMatriculas matriculasPorStatus={matriculasPorStatus} />
-        </div>
-        <div className={cn("transition-opacity", tab === "ocupacao" ? "ring-2 ring-ring/50 rounded-xl" : "opacity-70")}>
-          <AcademicChartOcupacao polos={polos} />
-        </div>
-        <div className={cn("transition-opacity", tab === "financeiro" ? "ring-2 ring-ring/50 rounded-xl" : "opacity-70")}>
-          <AcademicChartFinanceiro periodoLabel={periodoLabel} volume={volume} />
-        </div>
-        <div className={cn("transition-opacity", tab === "extensao" ? "ring-2 ring-ring/50 rounded-xl" : "opacity-70")}>
-          <AcademicChartExtensao auditorias={auditorias} />
-        </div>
-      </div>
-    </div>
+      <TabsContent value="matriculas">
+        <AcademicChartMatriculas matriculasPorStatus={matriculasPorStatus} />
+      </TabsContent>
+      <TabsContent value="ocupacao">
+        <AcademicChartOcupacao polos={polos} />
+      </TabsContent>
+      <TabsContent value="financeiro">
+        <AcademicChartFinanceiro periodoLabel={periodoLabel} volume={volume} />
+      </TabsContent>
+      <TabsContent value="extensao">
+        <AcademicChartExtensao auditorias={auditorias} />
+      </TabsContent>
+    </Tabs>
   );
 };
