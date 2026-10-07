@@ -8,6 +8,7 @@ import {useForm} from "react-hook-form";
 import {toast} from "sonner";
 import {z} from "zod";
 
+import {AdminCombobox} from "@/components/admin/admin-combobox";
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
@@ -28,14 +29,12 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
-import {Separator} from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -44,9 +43,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {chExtensaoDaAuditoria, splitCargaHoraria} from "@/lib/academic/carga-horaria";
+import {chExtensaoDaAuditoria} from "@/lib/academic/carga-horaria";
 import {formatPercent} from "@/lib/admin/format";
-import {MODALIDADE_LABEL, TIPO_COMPONENTE_LABEL, TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
+import {MODALIDADE_LABEL} from "@/lib/admin/labels";
 import {getMutationErrorMessage, isConflictError} from "@/lib/admin/mutation-error";
 import type {
   AuditoriaMec,
@@ -54,14 +53,13 @@ import type {
   Curso,
   Disciplina,
   Matriz,
-  TipoComponente,
-  TipoEntrega,
 } from "@/lib/api/fetch-generated";
 import {
   getGetMatrizesQueryKey,
   useAddComponenteMatriz,
   useCreateMatriz,
   useDeleteComponente,
+  useDeleteMatriz,
   useGetAuditoriaMec,
   useGetComponentesMatriz,
   useGetCursos,
@@ -69,51 +67,16 @@ import {
   useGetMatrizes,
 } from "@/lib/api/rc-generated";
 
-const tiposComponente: TipoComponente[] = [
-  "CORE_VIDA_CARREIRA",
-  "ESPECIFICO",
-  "ELETIVA_TRILHA",
-  "EXTENSAO",
-  "OPTATIVO",
-];
-
-const tiposEntrega: TipoEntrega[] = [
-  "PRESENCIAL_FISICO",
-  "SINCRONO_MEDIADO",
-  "ASSINCRONO_DIGITAL",
-];
-
 const matrizSchema = z.object({
   cursoId: z.string().min(1),
   nome: z.string().min(3).max(100),
   anoVigencia: z.number().int().min(2020),
 });
 
-const componenteSchema = z
-  .object({
-    disciplinaId: z.string().min(1),
-    semestreIdeal: z.number().int().min(1).max(16),
-    tipo: z.enum([
-      "CORE_VIDA_CARREIRA",
-      "ESPECIFICO",
-      "ELETIVA_TRILHA",
-      "EXTENSAO",
-      "OPTATIVO",
-    ]),
-    tipoEntrega: z.enum(["PRESENCIAL_FISICO", "SINCRONO_MEDIADO", "ASSINCRONO_DIGITAL"]),
-    chTotal: z.number().int().min(10),
-    chPresencial: z.number().int().min(0),
-    chSincrona: z.number().int().min(0),
-    chAssincrona: z.number().int().min(0),
-    chExtensao: z.number().int().min(0),
-  })
-  .refine(
-    (payload) => payload.chPresencial + payload.chSincrona + payload.chAssincrona === payload.chTotal,
-    {
-      message: "A soma presencial + síncrona + assíncrona deve ser igual à CH total.",
-      path: ["chAssincrona"],
-    },
-  );
+const componenteSchema = z.object({
+  disciplinaId: z.string().min(1),
+  semestreIdeal: z.number().int().min(1).max(16),
+});
 
 type MatrizFormValues = z.infer<typeof matrizSchema>;
 type ComponenteFormValues = z.infer<typeof componenteSchema>;
@@ -151,26 +114,34 @@ export const MatrizesView = ({
   const [selectedId, setSelectedId] = useState(listaMatrizes[0]?.id ?? "");
   const [matrizDialogOpen, setMatrizDialogOpen] = useState(false);
   const [componenteDialogOpen, setComponenteDialogOpen] = useState(false);
-  const [conflict, setConflict] = useState<{entityName: string; message: string} | null>(null);
+  const [conflict, setConflict] = useState<{
+    entityName: string;
+    message: string;
+    recommendedAction: string;
+  } | null>(null);
   const [pendingComponente, setPendingComponente] = useState<ComponenteCurricular | null>(null);
+  const [pendingMatrizDelete, setPendingMatrizDelete] = useState(false);
 
   const {data: auditoria} = useGetAuditoriaMec(selectedId, {
     initialData: selectedId === initialMatrizes[0]?.id ? (initialAuditoria ?? undefined) : undefined,
   });
-  const {data: componentes} = useGetComponentesMatriz(selectedId, {
-    initialData:
-      selectedId === initialMatrizes[0]?.id ? initialComponentes : undefined,
-  });
+  const {data: componentes, isFetching: isFetchingComponentes} = useGetComponentesMatriz(
+    selectedId,
+    {
+      initialData:
+        selectedId === initialMatrizes[0]?.id ? initialComponentes : undefined,
+    },
+  );
 
   const {mutate: createMatriz, isPending: isCreatingMatriz} = useCreateMatriz();
   const {mutate: addComponente, isPending: isAddingComponente} = useAddComponenteMatriz();
   const {mutate: removeComponente, isPending: isRemoving} = useDeleteComponente();
+  const {mutate: removeMatriz, isPending: isDeletingMatriz} = useDeleteMatriz();
 
-  const listaComponentes = componentes ?? initialComponentes;
+  const listaComponentes =
+    componentes ?? (selectedId === initialMatrizes[0]?.id ? initialComponentes : []);
   const relatorio = auditoria ?? null;
   const matrizAtual = listaMatrizes.find((item) => item.id === selectedId);
-  const modalidadeMatriz =
-    listaCursos.find((curso) => curso.id === matrizAtual?.cursoId)?.modalidade ?? "PRESENCIAL";
 
   const matrizForm = useForm<MatrizFormValues>({
     resolver: zodResolver(matrizSchema),
@@ -184,15 +155,8 @@ export const MatrizesView = ({
   const componenteForm = useForm<ComponenteFormValues>({
     resolver: zodResolver(componenteSchema),
     defaultValues: {
-      disciplinaId: listaDisciplinas[0]?.id ?? "",
+      disciplinaId: "",
       semestreIdeal: 1,
-      tipo: "ESPECIFICO",
-      tipoEntrega: "PRESENCIAL_FISICO",
-      chTotal: 80,
-      chPresencial: 80,
-      chSincrona: 0,
-      chAssincrona: 0,
-      chExtensao: 0,
     },
   });
 
@@ -214,6 +178,11 @@ export const MatrizesView = ({
     return listaCursos.find((curso) => curso.id === cursoId)?.nome ?? cursoId;
   };
 
+  const disciplinasDisponiveis = useMemo(() => {
+    const vinculadas = new Set(listaComponentes.map((item) => item.disciplinaId));
+    return listaDisciplinas.filter((disciplina) => !vinculadas.has(disciplina.id));
+  }, [listaComponentes, listaDisciplinas]);
+
   const onCreateMatriz = matrizForm.handleSubmit((payload) => {
     createMatriz(payload, {
       onSuccess: (created) => {
@@ -231,18 +200,25 @@ export const MatrizesView = ({
       return;
     }
 
+    const disciplina = listaDisciplinas.find((item) => item.id === payload.disciplinaId);
+
+    if (!disciplina) {
+      toast.error("Disciplina não encontrada no catálogo.");
+      return;
+    }
+
     addComponente(
       {
         matrizCurricularId: selectedId,
-        disciplinaId: payload.disciplinaId,
+        disciplinaId: disciplina.id,
         semestreIdeal: payload.semestreIdeal,
-        tipo: payload.tipo,
-        tipoEntrega: payload.tipoEntrega,
-        chTotal: payload.chTotal,
-        chPresencial: payload.chPresencial,
-        chSincrona: payload.chSincrona,
-        chAssincrona: payload.chAssincrona,
-        chExtensao: payload.chExtensao,
+        tipo: disciplina.tipo,
+        tipoEntrega: disciplina.tipoEntrega,
+        chTotal: disciplina.chTotal,
+        chPresencial: disciplina.chPresencial,
+        chSincrona: disciplina.chSincrona,
+        chAssincrona: disciplina.chAssincrona,
+        chExtensao: disciplina.chExtensao,
       },
       {
         onSuccess: () => {
@@ -276,19 +252,34 @@ export const MatrizesView = ({
               <PlusCircle />
               Nova matriz
             </Button>
+            {selectedId ? (
+              <Button
+                disabled={isDeletingMatriz || isFetchingComponentes}
+                onClick={() => {
+                  if (isFetchingComponentes) {
+                    return;
+                  }
+
+                  if (listaComponentes.length > 0) {
+                    toast.error("Remova os componentes antes de excluir a matriz.");
+                    return;
+                  }
+
+                  setPendingMatrizDelete(true);
+                }}
+                size="sm"
+                variant="outline"
+              >
+                <Trash2 />
+                Excluir matriz
+              </Button>
+            ) : null}
             <Button
               disabled={!selectedId}
               onClick={() => {
-                const chTotal = 80;
-                const distribuicao = splitCargaHoraria(chTotal, modalidadeMatriz);
                 componenteForm.reset({
-                  disciplinaId: listaDisciplinas[0]?.id ?? "",
+                  disciplinaId: "",
                   semestreIdeal: 1,
-                  tipo: "ESPECIFICO",
-                  tipoEntrega: "PRESENCIAL_FISICO",
-                  chTotal,
-                  ...distribuicao,
-                  chExtensao: 0,
                 });
                 setComponenteDialogOpen(true);
               }}
@@ -588,6 +579,8 @@ export const MatrizesView = ({
                 setConflict({
                   entityName: `Componente ${componente.disciplina.codigo}`,
                   message: getMutationErrorMessage(error),
+                  recommendedAction:
+                    "Desenturme os alunos na turma desta disciplina antes de desvincular o componente da matriz.",
                 });
                 return;
               }
@@ -605,6 +598,57 @@ export const MatrizesView = ({
         title="Remover componente da matriz?"
       />
 
+      <ConfirmDialog
+        confirmLabel="Excluir matriz"
+        description={
+          matrizAtual
+            ? `Excluir ${matrizAtual.nome}? Só é permitida se a matriz estiver sem componentes e sem matrículas.`
+            : ""
+        }
+        isPending={isDeletingMatriz}
+        onConfirm={() => {
+          if (!selectedId) {
+            return;
+          }
+
+          const matrizId = selectedId;
+          const remaining = listaMatrizes.filter((item) => item.id !== matrizId);
+
+          removeMatriz(matrizId, {
+            onSuccess: () => {
+              toast.success("Matriz excluída.");
+              setSelectedId(remaining[0]?.id ?? "");
+              invalidateMatrizes();
+              setPendingMatrizDelete(false);
+            },
+            onError: (error) => {
+              setPendingMatrizDelete(false);
+
+              if (isConflictError(error)) {
+                const message = getMutationErrorMessage(error);
+                setConflict({
+                  entityName: matrizAtual?.nome ?? "Matriz",
+                  message,
+                  recommendedAction: message.includes("componentes")
+                    ? "Remova todos os componentes da matriz antes de excluí-la."
+                    : "Reatribua ou encerre as matrículas vinculadas a esta matriz antes de excluí-la.",
+                });
+                return;
+              }
+
+              toast.error(getMutationErrorMessage(error));
+            },
+          });
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingMatrizDelete(false);
+          }
+        }}
+        open={pendingMatrizDelete}
+        title="Excluir matriz curricular?"
+      />
+
       <ConflictDialog
         dependencyMessage={conflict?.message ?? ""}
         entityName={conflict?.entityName ?? ""}
@@ -614,7 +658,7 @@ export const MatrizesView = ({
           }
         }}
         open={conflict !== null}
-        recommendedAction="Desenturme os alunos na turma desta disciplina antes de desvincular o componente da matriz."
+        recommendedAction={conflict?.recommendedAction ?? ""}
       />
 
       <Dialog onOpenChange={setMatrizDialogOpen} open={matrizDialogOpen}>
@@ -693,11 +737,11 @@ export const MatrizesView = ({
       </Dialog>
 
       <Dialog onOpenChange={setComponenteDialogOpen} open={componenteDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Adicionar componente</DialogTitle>
             <DialogDescription>
-              CH total = presencial + síncrona + assíncrona. Os pisos seguem a modalidade {MODALIDADE_LABEL[modalidadeMatriz]}.
+              Carga horária, tipo e entrega vêm do catálogo da disciplina. Informe só o semestre ideal nesta matriz.
             </DialogDescription>
           </DialogHeader>
           <Form {...componenteForm}>
@@ -709,147 +753,15 @@ export const MatrizesView = ({
                   <FormItem>
                     <FormLabel>Disciplina</FormLabel>
                     <FormControl>
-                      <AdminSelect
-                        items={listaDisciplinas.map((disciplina) => ({
+                      <AdminCombobox
+                        emptyText="Nenhuma disciplina disponível."
+                        items={disciplinasDisponiveis.map((disciplina) => ({
                           value: disciplina.id,
                           label: `${disciplina.codigo} · ${disciplina.nome}`,
+                          keywords: `${disciplina.codigo} ${disciplina.nome}`,
                         }))}
                         onValueChange={field.onChange}
-                        value={field.value}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={componenteForm.control}
-                  name="semestreIdeal"
-                  render={({field}) => (
-                    <FormItem>
-                      <FormLabel>Semestre ideal</FormLabel>
-                      <FormControl>
-                        <Input
-                          max={16}
-                          min={1}
-                          onBlur={field.onBlur}
-                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                          ref={field.ref}
-                          type="number"
-                          value={field.value}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={componenteForm.control}
-                  name="chTotal"
-                  render={({field}) => (
-                    <FormItem>
-                      <FormLabel>CH total</FormLabel>
-                      <FormControl>
-                        <Input
-                          min={10}
-                          onBlur={field.onBlur}
-                          onChange={(event) => {
-                            const chTotal = event.target.valueAsNumber;
-                            field.onChange(chTotal);
-                            if (!Number.isNaN(chTotal)) {
-                              const distribuicao = splitCargaHoraria(chTotal, modalidadeMatriz);
-                              componenteForm.setValue("chPresencial", distribuicao.chPresencial);
-                              componenteForm.setValue("chSincrona", distribuicao.chSincrona);
-                              componenteForm.setValue("chAssincrona", distribuicao.chAssincrona);
-                            }
-                          }}
-                          ref={field.ref}
-                          type="number"
-                          value={field.value}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <FormField
-                  control={componenteForm.control}
-                  name="chPresencial"
-                  render={({field}) => (
-                    <FormItem>
-                      <FormLabel>CH presencial</FormLabel>
-                      <FormControl>
-                        <Input
-                          min={0}
-                          onBlur={field.onBlur}
-                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                          ref={field.ref}
-                          type="number"
-                          value={field.value}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={componenteForm.control}
-                  name="chSincrona"
-                  render={({field}) => (
-                    <FormItem>
-                      <FormLabel>CH síncrona</FormLabel>
-                      <FormControl>
-                        <Input
-                          min={0}
-                          onBlur={field.onBlur}
-                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                          ref={field.ref}
-                          type="number"
-                          value={field.value}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={componenteForm.control}
-                  name="chAssincrona"
-                  render={({field}) => (
-                    <FormItem>
-                      <FormLabel>CH assíncrona</FormLabel>
-                      <FormControl>
-                        <Input
-                          min={0}
-                          onBlur={field.onBlur}
-                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                          ref={field.ref}
-                          type="number"
-                          value={field.value}
-                        />
-                      </FormControl>
-                      <FormDescription className="text-[11px]">Soma = CH total</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={componenteForm.control}
-                name="tipo"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Tipo</FormLabel>
-                    <FormControl>
-                      <AdminSelect
-                        items={tiposComponente.map((item) => ({
-                          value: item,
-                          label: TIPO_COMPONENTE_LABEL[item],
-                        }))}
-                        onValueChange={field.onChange}
+                        placeholder="Buscar por código ou nome..."
                         value={field.value}
                       />
                     </FormControl>
@@ -859,33 +771,14 @@ export const MatrizesView = ({
               />
               <FormField
                 control={componenteForm.control}
-                name="tipoEntrega"
+                name="semestreIdeal"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel>Tipo de entrega</FormLabel>
-                    <FormControl>
-                      <AdminSelect
-                        items={tiposEntrega.map((item) => ({
-                          value: item,
-                          label: TIPO_ENTREGA_LABEL[item],
-                        }))}
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={componenteForm.control}
-                name="chExtensao"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>CH extensão</FormLabel>
+                    <FormLabel>Semestre ideal</FormLabel>
                     <FormControl>
                       <Input
-                        min={0}
+                        max={16}
+                        min={1}
                         onBlur={field.onBlur}
                         onChange={(event) => field.onChange(event.target.valueAsNumber)}
                         ref={field.ref}
@@ -897,7 +790,6 @@ export const MatrizesView = ({
                   </FormItem>
                 )}
               />
-              <Separator />
               <DialogFooter>
                 <Button
                   onClick={() => setComponenteDialogOpen(false)}

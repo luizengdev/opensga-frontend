@@ -98,6 +98,8 @@ export const getMatrizes = async (cursoId?: string) =>
 export const getMatriz = async (id: string) => requestApi<MatrizDetail>(`/api/v1/academic/matrizes/${id}`);
 export const createMatriz = async (data: CreateMatrizInput) =>
   requestApi<Matriz>("/api/v1/academic/matrizes", {method: "POST", body: JSON.stringify(data)});
+export const deleteMatriz = async (id: string) =>
+  requestApi<DeleteResponse>(`/api/v1/academic/matrizes/${id}`, {method: "DELETE"});
 export const getAuditoriaMec = async (id: string) =>
   requestApi<AuditoriaMec>(`/api/v1/academic/matrizes/${id}/auditoria-mec`);
 export const getComponentesMatriz = async (id: string) =>

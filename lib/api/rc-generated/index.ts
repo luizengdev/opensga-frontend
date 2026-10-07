@@ -16,6 +16,7 @@ import {
   createInscricao,
   createMatricula,
   createMatriz,
+  deleteMatriz,
   createPreco,
   createProfessor,
   createTurma,
@@ -239,6 +240,7 @@ export const useGetMatriz = (id: string, options?: {initialData?: Awaited<Return
   });
 export const useCreateMatriz = () =>
   useMutation({mutationFn: (data: CreateMatrizInput) => createMatriz(data)});
+export const useDeleteMatriz = () => useMutation({mutationFn: deleteMatriz});
 export const useGetAuditoriaMec = (
   id: string,
   options?: {initialData?: Awaited<ReturnType<typeof getAuditoriaMec>>},

@@ -115,15 +115,32 @@ export interface CreateCursoInput {
   duracaoSemestres?: number;
 }
 
-export interface Disciplina {
+export interface DisciplinaResumo {
   id: string;
   nome: string;
   codigo: string;
 }
 
+export interface Disciplina extends DisciplinaResumo {
+  tipo: TipoComponente;
+  tipoEntrega: TipoEntrega;
+  chTotal: number;
+  chPresencial: number;
+  chSincrona: number;
+  chAssincrona: number;
+  chExtensao: number;
+}
+
 export interface CreateDisciplinaInput {
   nome: string;
   codigo: string;
+  tipo: TipoComponente;
+  tipoEntrega: TipoEntrega;
+  chTotal: number;
+  chPresencial: number;
+  chSincrona: number;
+  chAssincrona: number;
+  chExtensao: number;
 }
 
 export interface Matriz {
@@ -143,7 +160,7 @@ export interface MatrizDetail extends Matriz {
     tipo: TipoComponente;
     tipoEntrega: TipoEntrega;
     chTotal: number;
-    disciplina: Disciplina;
+    disciplina: DisciplinaResumo;
   }>;
 }
 
@@ -165,7 +182,7 @@ export interface ComponenteCurricular {
   chSincrona: number;
   chAssincrona: number;
   chExtensao: number;
-  disciplina: Disciplina;
+  disciplina: DisciplinaResumo;
 }
 
 export interface AddComponenteInput {
@@ -222,7 +239,7 @@ export interface Turma {
   horario: string;
   salaOuLink: string | null;
   tipoEntrega: TipoEntrega;
-  disciplina: Disciplina;
+  disciplina: DisciplinaResumo;
   chTotal: number | null;
   professor: {
     id: string;
@@ -261,7 +278,7 @@ export interface DiarioClasse {
   chCumprida: number;
   statusDisciplina: StatusDisciplina;
   semestreFechado: boolean;
-  turma: {id: string; codigo: string; disciplina: Disciplina};
+  turma: {id: string; codigo: string; disciplina: DisciplinaResumo};
   aluno: {ra: string; nome: string};
 }
 
