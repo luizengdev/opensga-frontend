@@ -60,17 +60,18 @@ export const LoginAlunoForm = () => {
 
   return (
     <Form {...form}>
-      <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+      <form className="flex flex-col gap-5" onSubmit={onSubmit}>
         <FormField
           control={form.control}
           name="identificador"
           render={({field}) => (
             <FormItem>
-              <FormLabel>Identificador</FormLabel>
+              <FormLabel>E-mail, CPF ou RA</FormLabel>
               <FormControl>
                 <Input
                   autoComplete="username"
-                  placeholder="E-mail, CPF ou RA"
+                  className="h-10"
+                  placeholder="aluno@opensga.dev"
                   {...field}
                 />
               </FormControl>
@@ -87,6 +88,7 @@ export const LoginAlunoForm = () => {
               <FormControl>
                 <Input
                   autoComplete="current-password"
+                  className="h-10"
                   type="password"
                   placeholder="Digite sua senha"
                   {...field}
@@ -99,7 +101,7 @@ export const LoginAlunoForm = () => {
         {submitError ? (
           <p className="text-sm text-destructive">{submitError}</p>
         ) : null}
-        <Button type="submit" disabled={isLoggingIn}>
+        <Button className="mt-1 w-full" disabled={isLoggingIn} size="lg" type="submit">
           {isLoggingIn ? "Entrando..." : "Entrar"}
         </Button>
       </form>
