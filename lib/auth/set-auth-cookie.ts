@@ -14,6 +14,6 @@ export const setAuthTokenCookie = async (token: string) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    expires: expiry?.toDate() ?? dayjs().add(7, "day").toDate(),
+    expires: expiry?.toDate() ?? dayjs().add(20, "minute").toDate(),
   });
 };

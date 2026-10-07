@@ -6,8 +6,10 @@ import {useSearchParams} from "next/navigation";
 import {AlunoHeader} from "@/components/aluno/aluno-header";
 import {AlunoMobileNav} from "@/components/aluno/aluno-mobile-nav";
 import {AlunoSidebar} from "@/components/aluno/aluno-sidebar";
-import {useGetMe, useGetPortalContexto} from "@/lib/api/rc-generated";
+import {SessionIdleGuard} from "@/components/auth/session-idle-guard";
 import type {MeProfile} from "@/lib/api/fetch-generated";
+import {useGetMe, useGetPortalContexto} from "@/lib/api/rc-generated";
+import {ALUNO_IDLE_MS} from "@/lib/auth/session-idle";
 
 interface AlunoShellProps {
   children: ReactNode;
@@ -30,6 +32,7 @@ export const AlunoShell = ({children, initialMe}: AlunoShellProps) => {
 
   return (
     <div className="flex min-h-full flex-1 bg-background text-foreground">
+      <SessionIdleGuard idleMs={ALUNO_IDLE_MS} loginPath="/login-aluno" />
       <AlunoSidebar
         isOpenMobile={isMobileSidebarOpen}
         matricula={contexto?.matricula ?? null}

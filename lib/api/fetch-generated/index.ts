@@ -91,3 +91,13 @@ export const login = async (data: LoginInput) => {
     body: JSON.stringify(data),
   });
 };
+
+export interface RenewSessionResponse {
+  token: string;
+}
+
+export const renovarSessao = async () => {
+  return requestApi<RenewSessionResponse>("/api/v1/auth/renovar", {
+    method: "POST",
+  });
+};

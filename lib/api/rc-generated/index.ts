@@ -61,6 +61,7 @@ import {
   getTransferenciaPreview,
   getUsers,
   login,
+  renovarSessao,
   responderReclamacao,
   transferirMatricula,
   updateCampus,
@@ -130,6 +131,11 @@ export const useLogin = () => {
     mutationFn: (data: LoginInput) => login(data),
   });
 };
+
+export const useRenovarSessao = () =>
+  useMutation({
+    mutationFn: renovarSessao,
+  });
 
 export const getGetMeQueryKey = () => ["/api/v1/auth/me"] as const;
 export const useGetMe = (options?: {query?: {initialData?: MeProfile}}) =>

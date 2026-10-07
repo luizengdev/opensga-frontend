@@ -49,6 +49,7 @@ alwaysApply: true
 - **Portal Administrativo (`/area-admin`):** Páginas protegidas do admin devem redirecionar para `/login-admin` caso o cookie esteja ausente ou a role decodificada não seja `ADMIN` ou `PROFESSOR`.
 - **Páginas de Login (`/login-aluno` ou `/login-admin`):** Devem verificar se o cookie existe e é válido para a respectiva role; se sim, devem redirecionar imediatamente para seus respectivos dashboards (`/area-aluno/dashboard` ou `/area-admin/dashboard`).
 - **Validação de Token na API:** Lembre-se de que a segurança real dos dados é feita pela API Fastify. Se o token expirar ou for inválido, os hooks do Orval/TanStack Query lançarão um erro de requisição (401), o qual deve ser tratado para deslogar o usuário limpando o cookie.
+- **Inatividade:** `SessionIdleGuard` no `AdminShell` (20 min) e no `AlunoShell` (30 min). Sem atividade, limpa o cookie e redireciona ao login. Com atividade, `useRenovarSessao` → `POST /auth/renovar` desliza o JWT (mesma janela do papel). Constantes em `@/lib/auth/session-idle`.
 
 ## Imagens
 
