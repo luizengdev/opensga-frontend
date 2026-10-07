@@ -100,7 +100,7 @@ As contas vêm do seed da API (`npx prisma db seed --config prisma7.config.ts` n
 | `PROFESSOR` | `/login-admin` | `professor@opensga.dev` | `Professor@123456` |
 | `ALUNO` | `/login-aluno` | `aluno@opensga.dev` | `Aluno@123456` |
 
-O seed monta campi `SEDE-REC` / `POLO-EAD`, 10 cursos, matrizes 2026.1, turmas, diários e faturas.
+O seed monta `SEDE-REC` (campus presencial) e `POLO-EAD` (polo EAD), 10 cursos, matrizes 2026.1, turmas por curso, diários e faturas.
 
 ---
 

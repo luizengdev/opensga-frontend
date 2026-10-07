@@ -31,7 +31,7 @@ alwaysApply: true
 
 - O dashboard da Secretaria (`/area-admin/dashboard`, papel `ADMIN`) **DEVE** incluir `AcademicChartsSection` (`@/components/admin/academic-charts-section`) imediatamente após a grade de KPIs, com as quatro visualizações:
   1. Composição do corpo discente (funil de retenção: Ativos, Pré-Matriculados, Trancados, Cancelados + índice de retenção líquida).
-  2. Taxa de ocupação por campus/polo MEC (capacidade vs. enturmações, vagas remanescentes).
+  2. Taxa de ocupação por campus/polo MEC (`Campus.tipo` CAMPI ou POLO; capacidade vs. enturmações, vagas restantes).
   3. Conciliação financeira de mensalidades Stripe (Liquidado/Pago, A Vencer, Inadimplência em Atraso).
   4. Termômetro regulatório de curricularização da extensão (Resolução CNE/CES nº 7/2018, meta ≥ 10%), com marco visual da linha de corte.
 - Use o componente `Tabs` do shadcn/ui para o gestor focar a métrica desejada. **NUNCA** use `<button>` nativo no alternador.

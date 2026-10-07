@@ -87,6 +87,11 @@ export const ClientComponent = (props) => {
 - Status de disciplina: `EM_ABERTO` | `APROVADO` | `RF` | `RN`.
 - Portal do aluno: `GET /portal/contexto` via `getPortalContexto` / `useGetPortalContexto` (query `alunoId` para responsável). Ouvidoria própria: `useCreatePortalReclamacao`. Senha: `useChangePassword` → `PATCH /auth/senha`. Pagar fatura só se `stripePaymentUrl` e valor > 0 (redirecionar à URL Stripe; R$ 0 sem Checkout).
 - Auditoria estrita: `GET /academic/matrizes/:id/auditoria` (409 se violação do Decreto 12.456 ou extensão &lt; 10%). Dashboard usa `GET .../auditoria-mec` (sempre 200).
+- Campus: cadastro com `tipo` `CAMPI` (presencial/semipresencial) ou `POLO` (EAD). Código da unidade em `codigoPolo`.
+- Curso: modalidade deve bater com o tipo da unidade (polo → só EAD; campus → sem EAD).
+- Disciplina (catálogo): formulário com CH, tipo e entrega (`CargaCurricularFields`). Semestre ideal não entra. Tabela mostra CH total e tipo.
+- Matriz — adicionar componente: combobox de disciplina (nome/código); só pede semestre ideal; carga/tipo vêm do catálogo. Excluir matriz: toast se ainda houver componentes; vazia → `ConfirmDialog` + `useDeleteMatriz`; 409 de matrícula no `ConflictDialog`.
+- Turma: ofertar escolhendo `cursoId`, `anoLetivo` e `semestreLetivo`. Disciplinas filtradas pela matriz do curso; campus vem da unidade do curso. Lista filtra período e curso.
 
 ## Pagamentos (Stripe)
 
