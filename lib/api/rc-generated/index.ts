@@ -266,10 +266,11 @@ export const useAddComponenteMatriz = () =>
   useMutation({mutationFn: (data: AddComponenteInput) => addComponenteMatriz(data)});
 export const useDeleteComponente = () => useMutation({mutationFn: deleteComponente});
 
-export const getGetTurmasQueryKey = (query?: DashboardPeriodQuery & {campusId?: string}) =>
-  ["/api/v1/academic/turmas", query] as const;
+export const getGetTurmasQueryKey = (
+  query?: DashboardPeriodQuery & {campusId?: string; cursoId?: string},
+) => ["/api/v1/academic/turmas", query] as const;
 export const useGetTurmas = (options?: {
-  query?: {campusId?: string; anoLetivo?: number; semestreLetivo?: number};
+  query?: {campusId?: string; cursoId?: string; anoLetivo?: number; semestreLetivo?: number};
   initialData?: Awaited<ReturnType<typeof getTurmas>>;
 }) =>
   useQuery({

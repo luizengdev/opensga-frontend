@@ -4,7 +4,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {useQueryClient} from "@tanstack/react-query";
 import {GraduationCap, Pencil, PlusCircle, Trash2} from "lucide-react";
 import {useMemo, useState} from "react";
-import {useForm} from "react-hook-form";
+import {useForm, useWatch} from "react-hook-form";
 import {toast} from "sonner";
 import {z} from "zod";
 
@@ -41,10 +41,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {MODALIDADE_LABEL} from "@/lib/admin/labels";
+import {MODALIDADE_LABEL, TIPO_CAMPUS_LABEL, modalidadesPorTipoCampus} from "@/lib/admin/labels";
 import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {getMutationErrorMessage} from "@/lib/admin/mutation-error";
-import type {Campus, Curso, ModalidadeCurso} from "@/lib/api/fetch-generated";
+import type {Campus, Curso} from "@/lib/api/fetch-generated";
 import {
   getGetCursosQueryKey,
   useCreateCurso,
@@ -53,8 +53,6 @@ import {
   useGetCursos,
   useUpdateCurso,
 } from "@/lib/api/rc-generated";
-
-const modalidades: ModalidadeCurso[] = ["PRESENCIAL", "SEMIPRESENCIAL", "EAD"];
 
 const cursoSchema = z.object({
   campusId: z.string().min(1),
@@ -90,10 +88,15 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
       campusId: listaCampi[0]?.id ?? "",
       nome: "",
       codigoMec: "",
-      modalidade: "PRESENCIAL",
+      modalidade: listaCampi[0]?.tipo === "POLO" ? "EAD" : "PRESENCIAL",
       duracaoSemestres: 8,
     },
   });
+
+  const campusIdSelecionado = useWatch({control: form.control, name: "campusId"});
+  const tipoCampusSelecionado =
+    listaCampi.find((campus) => campus.id === campusIdSelecionado)?.tipo ?? "CAMPI";
+  const modalidadesDisponiveis = modalidadesPorTipoCampus(tipoCampusSelecionado);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({queryKey: getGetCursosQueryKey()});
@@ -105,7 +108,7 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
       campusId: listaCampi[0]?.id ?? "",
       nome: "",
       codigoMec: "",
-      modalidade: "PRESENCIAL",
+      modalidade: listaCampi[0]?.tipo === "POLO" ? "EAD" : "PRESENCIAL",
       duracaoSemestres: 8,
     });
     setDialogOpen(true);
@@ -296,7 +299,7 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
           <DialogHeader>
             <DialogTitle>{editing ? "Editar curso" : "Novo curso"}</DialogTitle>
             <DialogDescription>
-              Vincule o curso a um campus e defina a modalidade de oferta.
+              Campus oferta presencial ou semipresencial. Polo oferta EAD.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -306,15 +309,24 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
                 name="campusId"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel>Campus</FormLabel>
+                    <FormLabel>Campus ou polo</FormLabel>
                     <FormControl>
                       <AdminSelect
                         items={listaCampi.map((campus) => ({
                           value: campus.id,
-                          label: `${campus.codigoPolo} · ${campus.nome}`,
+                          label: `${TIPO_CAMPUS_LABEL[campus.tipo]} · ${campus.nome}`,
                         }))}
-                        onValueChange={field.onChange}
-                        placeholder="Selecione o campus"
+                        onValueChange={(campusId) => {
+                          field.onChange(campusId);
+                          const campus = listaCampi.find((item) => item.id === campusId);
+                          if (campus) {
+                            form.setValue(
+                              "modalidade",
+                              campus.tipo === "POLO" ? "EAD" : "PRESENCIAL",
+                            );
+                          }
+                        }}
+                        placeholder="Selecione o campus ou polo"
                         value={field.value}
                       />
                     </FormControl>
@@ -344,7 +356,7 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
                       <FormLabel>Modalidade</FormLabel>
                       <FormControl>
                         <AdminSelect
-                          items={modalidades.map((item) => ({
+                          items={modalidadesDisponiveis.map((item) => ({
                             value: item,
                             label: MODALIDADE_LABEL[item],
                           }))}

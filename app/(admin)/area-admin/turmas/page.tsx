@@ -1,6 +1,12 @@
 import {TurmasListView} from "@/components/admin/turmas-list-view";
 import {getPeriodoLetivoAtual} from "@/lib/academic/periodo-letivo";
-import {getCampi, getDisciplinas, getProfessores, getTurmas} from "@/lib/api/fetch-generated";
+import {
+  getCampi,
+  getCursos,
+  getMatrizes,
+  getProfessores,
+  getTurmas,
+} from "@/lib/api/fetch-generated";
 import {requireAdminSession} from "@/lib/auth/require-admin-session";
 
 const TurmasAdminPage = async () => {
@@ -8,10 +14,11 @@ const TurmasAdminPage = async () => {
   const periodo = getPeriodoLetivoAtual();
   const isAdmin = session.role === "ADMIN";
 
-  const [turmas, campi, disciplinas, professores] = await Promise.all([
+  const [turmas, campi, cursos, matrizes, professores] = await Promise.all([
     getTurmas(periodo),
     isAdmin ? getCampi() : Promise.resolve([]),
-    isAdmin ? getDisciplinas() : Promise.resolve([]),
+    isAdmin ? getCursos() : Promise.resolve([]),
+    isAdmin ? getMatrizes() : Promise.resolve([]),
     isAdmin ? getProfessores() : Promise.resolve([]),
   ]);
 
@@ -19,7 +26,8 @@ const TurmasAdminPage = async () => {
     <TurmasListView
       anoLetivo={periodo.anoLetivo}
       initialCampi={campi}
-      initialDisciplinas={disciplinas}
+      initialCursos={cursos}
+      initialMatrizes={matrizes}
       initialProfessores={professores}
       initialTurmas={turmas}
       isAdmin={isAdmin}

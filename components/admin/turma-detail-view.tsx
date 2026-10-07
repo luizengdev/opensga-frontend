@@ -328,7 +328,7 @@ export const TurmaDetailView = ({
             </span>
             <div className="mt-1 font-mono text-xs font-semibold">{atual.horario}</div>
             <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-              Ano/Sem: {atual.anoLetivo}.{atual.semestreLetivo}
+              {atual.curso.nome} · {atual.anoLetivo}.{atual.semestreLetivo}
             </div>
           </CardContent>
         </Card>

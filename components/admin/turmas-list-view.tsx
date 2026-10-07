@@ -4,11 +4,12 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {useQueryClient} from "@tanstack/react-query";
 import {Calendar, PlusCircle, Search, Trash2} from "lucide-react";
 import Link from "next/link";
-import {useMemo, useState} from "react";
-import {useForm} from "react-hook-form";
+import {useEffect, useMemo, useState} from "react";
+import {useForm, useWatch} from "react-hook-form";
 import {toast} from "sonner";
 import {z} from "zod";
 
+import {AdminCombobox} from "@/components/admin/admin-combobox";
 import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
@@ -44,17 +45,20 @@ import {
 } from "@/components/ui/table";
 import {formatPeriodoLetivo} from "@/lib/academic/periodo-letivo";
 import {TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
-import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {
   buildTurmaRestrictMessage,
   getMutationErrorMessage,
   isConflictError,
 } from "@/lib/admin/mutation-error";
-import type {Campus, Disciplina, Professor, TipoEntrega, Turma} from "@/lib/api/fetch-generated";
+import {useClientPagination} from "@/lib/admin/use-client-pagination";
+import type {Campus, Curso, Matriz, Professor, TipoEntrega, Turma} from "@/lib/api/fetch-generated";
 import {
   getGetTurmasQueryKey,
   useCreateTurma,
   useDeleteTurma,
+  useGetComponentesMatriz,
+  useGetCursos,
+  useGetMatrizes,
   useGetTurmas,
 } from "@/lib/api/rc-generated";
 
@@ -65,10 +69,13 @@ const tiposEntrega: TipoEntrega[] = [
 ];
 
 const turmaSchema = z.object({
+  cursoId: z.string().min(1),
   campusId: z.string().min(1),
   disciplinaId: z.string().min(1),
   professorId: z.string().min(1),
   codigo: z.string().min(3).max(50),
+  anoLetivo: z.number().int().min(2020),
+  semestreLetivo: z.union([z.literal(1), z.literal(2)]),
   capacidade: z.number().int().min(1),
   horario: z.string().min(3).max(100),
   salaOuLink: z.string().max(255).optional(),
@@ -80,7 +87,8 @@ type TurmaFormValues = z.infer<typeof turmaSchema>;
 interface TurmasListViewProps {
   anoLetivo: number;
   initialCampi: Campus[];
-  initialDisciplinas: Disciplina[];
+  initialCursos: Curso[];
+  initialMatrizes: Matriz[];
   initialProfessores: Professor[];
   initialTurmas: Turma[];
   isAdmin: boolean;
@@ -90,34 +98,48 @@ interface TurmasListViewProps {
 export const TurmasListView = ({
   anoLetivo,
   initialCampi,
-  initialDisciplinas,
+  initialCursos,
+  initialMatrizes,
   initialProfessores,
   initialTurmas,
   isAdmin,
   semestreLetivo,
 }: TurmasListViewProps) => {
   const queryClient = useQueryClient();
-  const periodo = {anoLetivo, semestreLetivo};
-  const {data: turmas} = useGetTurmas({query: periodo, initialData: initialTurmas});
+  const [anoFiltro, setAnoFiltro] = useState(anoLetivo);
+  const [semestreFiltro, setSemestreFiltro] = useState(semestreLetivo);
+  const periodo = {anoLetivo: anoFiltro, semestreLetivo: semestreFiltro};
+  const periodoInicial = anoFiltro === anoLetivo && semestreFiltro === semestreLetivo;
+  const {data: turmas} = useGetTurmas({
+    query: periodo,
+    initialData: periodoInicial ? initialTurmas : undefined,
+  });
+  const {data: cursos} = useGetCursos({initialData: initialCursos});
+  const {data: matrizes} = useGetMatrizes({initialData: initialMatrizes});
   const {mutate: createTurma, isPending: isCreating} = useCreateTurma();
   const {mutate: deleteTurma, isPending: isDeleting} = useDeleteTurma();
   const [searchTerm, setSearchTerm] = useState("");
   const [campusFilter, setCampusFilter] = useState("ALL");
+  const [cursoFilter, setCursoFilter] = useState("ALL");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [conflict, setConflict] = useState<{entityName: string; message: string} | null>(null);
 
-  const lista = turmas ?? initialTurmas;
+  const lista = turmas ?? (periodoInicial ? initialTurmas : []);
   const listaCampi = initialCampi;
-  const listaDisciplinas = initialDisciplinas;
+  const listaCursos = cursos ?? initialCursos;
+  const listaMatrizes = matrizes ?? initialMatrizes;
   const listaProfessores = initialProfessores;
 
   const form = useForm<TurmaFormValues>({
     resolver: zodResolver(turmaSchema),
     defaultValues: {
-      campusId: listaCampi[0]?.id ?? "",
-      disciplinaId: listaDisciplinas[0]?.id ?? "",
+      cursoId: listaCursos[0]?.id ?? "",
+      campusId: listaCursos[0]?.campusId ?? listaCampi[0]?.id ?? "",
+      disciplinaId: "",
       professorId: listaProfessores[0]?.id ?? "",
       codigo: "",
+      anoLetivo,
+      semestreLetivo: semestreLetivo === 1 ? 1 : 2,
       capacidade: 50,
       horario: "",
       salaOuLink: "",
@@ -125,42 +147,110 @@ export const TurmasListView = ({
     },
   });
 
+  const cursoIdSelecionado = useWatch({control: form.control, name: "cursoId"});
+  const disciplinaIdSelecionada = useWatch({control: form.control, name: "disciplinaId"});
+
+  const matrizDoCurso = useMemo(() => {
+    const doCurso = listaMatrizes.filter((matriz) => matriz.cursoId === cursoIdSelecionado);
+    const ativas = doCurso.filter((matriz) => matriz.ativo);
+    const candidatos = ativas.length > 0 ? ativas : doCurso;
+
+    return [...candidatos].sort((a, b) => b.anoVigencia - a.anoVigencia)[0];
+  }, [cursoIdSelecionado, listaMatrizes]);
+
+  const {data: componentes} = useGetComponentesMatriz(
+    dialogOpen ? (matrizDoCurso?.id ?? "") : "",
+  );
+  const disciplinasDoCurso = useMemo(() => {
+    return (componentes ?? []).map((item) => ({
+      id: item.disciplina.id,
+      nome: item.disciplina.nome,
+      codigo: item.disciplina.codigo,
+      tipoEntrega: item.tipoEntrega,
+    }));
+  }, [componentes]);
+
+  useEffect(() => {
+    const curso = listaCursos.find((item) => item.id === cursoIdSelecionado);
+
+    if (curso) {
+      form.setValue("campusId", curso.campusId);
+    }
+
+    if (
+      disciplinaIdSelecionada &&
+      !disciplinasDoCurso.some((disciplina) => disciplina.id === disciplinaIdSelecionada)
+    ) {
+      form.setValue("disciplinaId", "");
+    }
+  }, [cursoIdSelecionado, disciplinaIdSelecionada, disciplinasDoCurso, form, listaCursos]);
+
+  useEffect(() => {
+    const componente = disciplinasDoCurso.find((item) => item.id === disciplinaIdSelecionada);
+
+    if (componente) {
+      form.setValue("tipoEntrega", componente.tipoEntrega);
+    }
+  }, [disciplinaIdSelecionada, disciplinasDoCurso, form]);
+
   const filtradas = useMemo(() => {
     const termo = searchTerm.trim().toLowerCase();
 
     return lista.filter((turma) => {
       const matchesCampus = campusFilter === "ALL" || turma.campusId === campusFilter;
+      const matchesCurso = cursoFilter === "ALL" || turma.cursoId === cursoFilter;
       const matchesSearch =
         termo.length === 0 ||
         turma.codigo.toLowerCase().includes(termo) ||
         turma.disciplina.nome.toLowerCase().includes(termo) ||
+        turma.curso.nome.toLowerCase().includes(termo) ||
         turma.professor.user.nome.toLowerCase().includes(termo);
 
-      return matchesCampus && matchesSearch;
+      return matchesCampus && matchesCurso && matchesSearch;
     });
-  }, [lista, campusFilter, searchTerm]);
+  }, [lista, campusFilter, cursoFilter, searchTerm]);
 
   const pagination = useClientPagination({
     items: filtradas,
-    resetKey: `${searchTerm}|${campusFilter}`,
+    resetKey: `${searchTerm}|${campusFilter}|${cursoFilter}|${anoFiltro}|${semestreFiltro}`,
   });
 
-  const invalidate = () => {
-    void queryClient.invalidateQueries({queryKey: getGetTurmasQueryKey(periodo)});
+  const invalidate = (queryPeriodo = periodo) => {
+    void queryClient.invalidateQueries({queryKey: getGetTurmasQueryKey(queryPeriodo)});
+    void queryClient.invalidateQueries({queryKey: ["/api/v1/academic/turmas"]});
+  };
+
+  const openDialog = () => {
+    const cursoInicial = listaCursos[0];
+
+    form.reset({
+      cursoId: cursoInicial?.id ?? "",
+      campusId: cursoInicial?.campusId ?? "",
+      disciplinaId: "",
+      professorId: listaProfessores[0]?.id ?? "",
+      codigo: "",
+      anoLetivo: anoFiltro,
+      semestreLetivo: semestreFiltro === 1 ? 1 : 2,
+      capacidade: 50,
+      horario: "",
+      salaOuLink: "",
+      tipoEntrega: "PRESENCIAL_FISICO",
+    });
+    setDialogOpen(true);
   };
 
   const onSubmit = form.handleSubmit((payload) => {
     createTurma(
       {
         ...payload,
-        anoLetivo,
-        semestreLetivo,
         salaOuLink: payload.salaOuLink || undefined,
       },
       {
         onSuccess: () => {
           toast.success("Turma ofertada.");
-          invalidate();
+          setAnoFiltro(payload.anoLetivo);
+          setSemestreFiltro(payload.semestreLetivo);
+          invalidate({anoLetivo: payload.anoLetivo, semestreLetivo: payload.semestreLetivo});
           setDialogOpen(false);
         },
         onError: (error) => toast.error(getMutationErrorMessage(error)),
@@ -177,7 +267,7 @@ export const TurmasListView = ({
       <AdminPageHeader
         actions={
           isAdmin ? (
-            <Button onClick={() => setDialogOpen(true)} size="sm">
+            <Button onClick={openDialog} size="sm">
               <PlusCircle />
               Ofertar nova turma
             </Button>
@@ -189,30 +279,68 @@ export const TurmasListView = ({
       />
 
       <Card>
-        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="relative flex-1">
+        <CardContent className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+          <div className="relative min-w-[16rem] flex-1">
             <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
             <Input
               className="pl-9"
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar por código, disciplina ou professor titular..."
+              placeholder="Buscar por código, curso, disciplina ou professor..."
               value={searchTerm}
             />
           </div>
           {isAdmin ? (
-            <div className="w-full md:w-56">
-              <AdminSelect
-                items={[
-                  {value: "ALL", label: "Todos os campi e polos"},
-                  ...listaCampi.map((campus) => ({
-                    value: campus.id,
-                    label: `${campus.codigoPolo} · ${campus.nome}`,
-                  })),
-                ]}
-                onValueChange={setCampusFilter}
-                value={campusFilter}
-              />
-            </div>
+            <>
+              <div className="w-full md:w-28">
+                <Input
+                  min={2020}
+                  onChange={(event) => {
+                    const ano = event.target.valueAsNumber;
+                    if (!Number.isNaN(ano)) {
+                      setAnoFiltro(ano);
+                    }
+                  }}
+                  type="number"
+                  value={anoFiltro}
+                />
+              </div>
+              <div className="w-full md:w-40">
+                <AdminSelect
+                  items={[
+                    {value: "1", label: "1º semestre"},
+                    {value: "2", label: "2º semestre"},
+                  ]}
+                  onValueChange={(value) => setSemestreFiltro(value === "1" ? 1 : 2)}
+                  value={String(semestreFiltro)}
+                />
+              </div>
+              <div className="w-full md:w-56">
+                <AdminSelect
+                  items={[
+                    {value: "ALL", label: "Todos os cursos"},
+                    ...listaCursos.map((curso) => ({
+                      value: curso.id,
+                      label: curso.nome,
+                    })),
+                  ]}
+                  onValueChange={setCursoFilter}
+                  value={cursoFilter}
+                />
+              </div>
+              <div className="w-full md:w-56">
+                <AdminSelect
+                  items={[
+                    {value: "ALL", label: "Todos os campi e polos"},
+                    ...listaCampi.map((campus) => ({
+                      value: campus.id,
+                      label: `${campus.codigoPolo} · ${campus.nome}`,
+                    })),
+                  ]}
+                  onValueChange={setCampusFilter}
+                  value={campusFilter}
+                />
+              </div>
+            </>
           ) : null}
         </CardContent>
       </Card>
@@ -228,84 +356,87 @@ export const TurmasListView = ({
           ) : (
             <>
               <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Disciplina</TableHead>
-                  <TableHead>Professor</TableHead>
-                  <TableHead>Campus</TableHead>
-                  <TableHead>Horário</TableHead>
-                  <TableHead>Ocupação</TableHead>
-                  {isAdmin ? <TableHead className="text-right">Ações</TableHead> : null}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pagination.pageItems.map((turma) => (
-                  <TableRow key={turma.id}>
-                    <TableCell>
-                      <Button
-                        className="h-auto p-0 font-mono"
-                        nativeButton={false} render={<Link href={`/area-admin/turmas/${turma.id}`} />}
-                        variant="link"
-                      >
-                        {turma.codigo}
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{turma.disciplina.nome}</div>
-                      <Badge variant="outline">{TIPO_ENTREGA_LABEL[turma.tipoEntrega]}</Badge>
-                    </TableCell>
-                    <TableCell>{turma.professor.user.nome}</TableCell>
-                    <TableCell className="font-mono text-xs">{campusNome(turma.campusId)}</TableCell>
-                    <TableCell className="font-mono text-xs">{turma.horario}</TableCell>
-                    <TableCell className="font-mono tabular-nums">
-                      {turma.quantidadeDiarios ?? 0}/{turma.capacidade}
-                    </TableCell>
-                    {isAdmin ? (
-                      <TableCell className="text-right">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Curso</TableHead>
+                    <TableHead>Disciplina</TableHead>
+                    <TableHead>Professor</TableHead>
+                    <TableHead>Campus</TableHead>
+                    <TableHead>Horário</TableHead>
+                    <TableHead>Ocupação</TableHead>
+                    {isAdmin ? <TableHead className="text-right">Ações</TableHead> : null}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pagination.pageItems.map((turma) => (
+                    <TableRow key={turma.id}>
+                      <TableCell>
                         <Button
-                          aria-label={`Excluir turma ${turma.codigo}`}
-                          disabled={isDeleting}
-                          onClick={() => {
-                            const quantidadeDiarios = turma.quantidadeDiarios ?? 0;
-
-                            if (quantidadeDiarios > 0) {
-                              setConflict({
-                                entityName: `Turma ${turma.codigo}`,
-                                message: buildTurmaRestrictMessage(quantidadeDiarios),
-                              });
-                              return;
-                            }
-
-                            deleteTurma(turma.id, {
-                              onSuccess: () => {
-                                toast.success("Turma removida.");
-                                invalidate();
-                              },
-                              onError: (error) => {
-                                if (isConflictError(error)) {
-                                  setConflict({
-                                    entityName: `Turma ${turma.codigo}`,
-                                    message: getMutationErrorMessage(error),
-                                  });
-                                  return;
-                                }
-
-                                toast.error(getMutationErrorMessage(error));
-                              },
-                            });
-                          }}
-                          size="icon-sm"
-                          variant="ghost"
+                          className="h-auto p-0 font-mono"
+                          nativeButton={false}
+                          render={<Link href={`/area-admin/turmas/${turma.id}`} />}
+                          variant="link"
                         >
-                          <Trash2 />
+                          {turma.codigo}
                         </Button>
                       </TableCell>
-                    ) : null}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      <TableCell>{turma.curso.nome}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">{turma.disciplina.nome}</div>
+                        <Badge variant="outline">{TIPO_ENTREGA_LABEL[turma.tipoEntrega]}</Badge>
+                      </TableCell>
+                      <TableCell>{turma.professor.user.nome}</TableCell>
+                      <TableCell className="font-mono text-xs">{campusNome(turma.campusId)}</TableCell>
+                      <TableCell className="font-mono text-xs">{turma.horario}</TableCell>
+                      <TableCell className="font-mono tabular-nums">
+                        {turma.quantidadeDiarios ?? 0}/{turma.capacidade}
+                      </TableCell>
+                      {isAdmin ? (
+                        <TableCell className="text-right">
+                          <Button
+                            aria-label={`Excluir turma ${turma.codigo}`}
+                            disabled={isDeleting}
+                            onClick={() => {
+                              const quantidadeDiarios = turma.quantidadeDiarios ?? 0;
+
+                              if (quantidadeDiarios > 0) {
+                                setConflict({
+                                  entityName: `Turma ${turma.codigo}`,
+                                  message: buildTurmaRestrictMessage(quantidadeDiarios),
+                                });
+                                return;
+                              }
+
+                              deleteTurma(turma.id, {
+                                onSuccess: () => {
+                                  toast.success("Turma removida.");
+                                  invalidate();
+                                },
+                                onError: (error) => {
+                                  if (isConflictError(error)) {
+                                    setConflict({
+                                      entityName: `Turma ${turma.codigo}`,
+                                      message: getMutationErrorMessage(error),
+                                    });
+                                    return;
+                                  }
+
+                                  toast.error(getMutationErrorMessage(error));
+                                },
+                              });
+                            }}
+                            size="icon-sm"
+                            variant="ghost"
+                          >
+                            <Trash2 />
+                          </Button>
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
               <AdminTablePagination
                 onPageChange={pagination.setPage}
                 onPageSizeChange={pagination.setPageSize}
@@ -335,37 +466,27 @@ export const TurmasListView = ({
           <DialogHeader>
             <DialogTitle>Ofertar turma</DialogTitle>
             <DialogDescription>
-              A turma entra no período {formatPeriodoLetivo(periodo)}.
+              Escolha o curso e o semestre letivo. A disciplina precisa estar na matriz desse curso.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form className="space-y-4" onSubmit={onSubmit}>
               <FormField
                 control={form.control}
-                name="codigo"
+                name="cursoId"
                 render={({field}) => (
                   <FormItem>
-                    <FormLabel>Código</FormLabel>
+                    <FormLabel>Curso</FormLabel>
                     <FormControl>
-                      <Input placeholder="ENG-CALC-T01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="campusId"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Campus</FormLabel>
-                    <FormControl>
-                      <AdminSelect
-                        items={listaCampi.map((campus) => ({
-                          value: campus.id,
-                          label: `${campus.codigoPolo} · ${campus.nome}`,
+                      <AdminCombobox
+                        emptyText="Nenhum curso encontrado."
+                        items={listaCursos.map((curso) => ({
+                          value: curso.id,
+                          label: curso.nome,
+                          keywords: `${curso.nome} ${curso.codigoMec ?? ""}`,
                         }))}
                         onValueChange={field.onChange}
+                        placeholder="Buscar curso..."
                         value={field.value}
                       />
                     </FormControl>
@@ -373,6 +494,48 @@ export const TurmasListView = ({
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="anoLetivo"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>Ano letivo</FormLabel>
+                      <FormControl>
+                        <Input
+                          min={2020}
+                          onBlur={field.onBlur}
+                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                          ref={field.ref}
+                          type="number"
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="semestreLetivo"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>Semestre</FormLabel>
+                      <FormControl>
+                        <AdminSelect
+                          items={[
+                            {value: "1", label: "1º semestre"},
+                            {value: "2", label: "2º semestre"},
+                          ]}
+                          onValueChange={(value) => field.onChange(value === "1" ? 1 : 2)}
+                          value={String(field.value)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="disciplinaId"
@@ -380,12 +543,19 @@ export const TurmasListView = ({
                   <FormItem>
                     <FormLabel>Disciplina</FormLabel>
                     <FormControl>
-                      <AdminSelect
-                        items={listaDisciplinas.map((disciplina) => ({
+                      <AdminCombobox
+                        emptyText={
+                          cursoIdSelecionado
+                            ? "Nenhuma disciplina na matriz deste curso."
+                            : "Selecione um curso primeiro."
+                        }
+                        items={disciplinasDoCurso.map((disciplina) => ({
                           value: disciplina.id,
                           label: `${disciplina.codigo} · ${disciplina.nome}`,
+                          keywords: `${disciplina.codigo} ${disciplina.nome}`,
                         }))}
                         onValueChange={field.onChange}
+                        placeholder="Buscar por código ou nome..."
                         value={field.value}
                       />
                     </FormControl>
@@ -408,6 +578,19 @@ export const TurmasListView = ({
                         onValueChange={field.onChange}
                         value={field.value}
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="codigo"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Código</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ENG-CALC-T01" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -4,6 +4,7 @@ import type {
   StatusFatura,
   StatusMatricula,
   StatusReclamacao,
+  TipoCampus,
   TipoComponente,
   TipoEntrega,
   TipoReclamacao,
@@ -44,6 +45,19 @@ export const MODALIDADE_LABEL: Record<ModalidadeCurso, string> = {
   PRESENCIAL: "Presencial",
   SEMIPRESENCIAL: "Semipresencial",
   EAD: "EAD",
+};
+
+export const TIPO_CAMPUS_LABEL: Record<TipoCampus, string> = {
+  CAMPI: "Campus (presencial)",
+  POLO: "Polo (EAD)",
+};
+
+export const modalidadesPorTipoCampus = (tipo: TipoCampus): ModalidadeCurso[] => {
+  if (tipo === "POLO") {
+    return ["EAD"];
+  }
+
+  return ["PRESENCIAL", "SEMIPRESENCIAL"];
 };
 
 export const TIPO_COMPONENTE_LABEL: Record<TipoComponente, string> = {

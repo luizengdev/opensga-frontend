@@ -15,6 +15,7 @@ export type TipoReclamacao =
   | "INFRAESTRUTURA"
   | "OUVIDORIA_GERAL";
 export type ModalidadeCurso = "PRESENCIAL" | "SEMIPRESENCIAL" | "EAD";
+export type TipoCampus = "CAMPI" | "POLO";
 export type TipoComponente =
   | "CORE_VIDA_CARREIRA"
   | "ESPECIFICO"
@@ -85,6 +86,7 @@ export interface Campus {
   id: string;
   nome: string;
   codigoPolo: string;
+  tipo: TipoCampus;
   cidade: string;
   estado: string;
   endereco: string;
@@ -93,6 +95,7 @@ export interface Campus {
 export interface CreateCampusInput {
   nome: string;
   codigoPolo: string;
+  tipo: TipoCampus;
   cidade: string;
   estado: string;
   endereco: string;
@@ -230,6 +233,7 @@ export interface AuditoriaMec {
 export interface Turma {
   id: string;
   campusId: string;
+  cursoId: string;
   disciplinaId: string;
   professorId: string;
   codigo: string;
@@ -239,6 +243,7 @@ export interface Turma {
   horario: string;
   salaOuLink: string | null;
   tipoEntrega: TipoEntrega;
+  curso: {id: string; nome: string};
   disciplina: DisciplinaResumo;
   chTotal: number | null;
   professor: {
@@ -252,6 +257,7 @@ export interface Turma {
 
 export interface CreateTurmaInput {
   campusId: string;
+  cursoId: string;
   disciplinaId: string;
   professorId: string;
   codigo: string;

@@ -114,6 +114,7 @@ export const deleteComponente = async (id: string) =>
 
 export const getTurmas = async (query?: {
   campusId?: string;
+  cursoId?: string;
   anoLetivo?: number;
   semestreLetivo?: number;
 }) => requestApi<Turma[]>(`/api/v1/academic/turmas${toQueryString(query)}`);
