@@ -17,6 +17,7 @@ import {formatPeriodoLetivo, getPeriodoLetivoAtual} from "@/lib/academic/periodo
 import {displayName} from "@/lib/aluno/labels";
 import {getAlunoBreadcrumb, withAlunoQuery} from "@/lib/aluno/nav";
 import type {MeProfile, PortalMatricula} from "@/lib/api/fetch-generated";
+import {useGetParametrizacoes} from "@/lib/api/rc-generated";
 import {clearAuthTokenCookie} from "@/lib/auth/clear-auth-cookie";
 
 interface AlunoHeaderProps {
@@ -29,7 +30,8 @@ interface AlunoHeaderProps {
 export const AlunoHeader = ({matricula, me, onOpenMobileSidebar, selectedAlunoId}: AlunoHeaderProps) => {
   const pathname = usePathname();
   const router = useRouter();
-  const periodo = getPeriodoLetivoAtual();
+  const {data: parametros} = useGetParametrizacoes();
+  const periodo = getPeriodoLetivoAtual(parametros);
   const {resolvedTheme, setTheme} = useTheme();
   const isDarkMode = resolvedTheme === "dark";
   const isResponsavel = me.role === "RESPONSAVEL";

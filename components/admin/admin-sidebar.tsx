@@ -1,11 +1,12 @@
 "use client";
 
 import {
+  ArrowLeftRight,
   BookOpen,
   Building2,
   Calendar,
-  ChevronRight,
   FileCheck2,
+  FileText,
   GraduationCap,
   LayoutDashboard,
   Layers,
@@ -13,15 +14,19 @@ import {
   Megaphone,
   MessageSquareWarning,
   Receipt,
+  Search,
+  SlidersHorizontal,
   Tag,
   Users,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
 import {usePathname} from "next/navigation";
 
+import {AdminSidebarNavItem} from "@/components/admin/admin-sidebar-nav-item";
+import {AdminSidebarResizeHandle} from "@/components/admin/admin-sidebar-resize-handle";
 import {Button} from "@/components/ui/button";
 import {getAdminNavGroups} from "@/lib/admin/nav";
+import {useAdminSidebarWidth} from "@/lib/admin/use-admin-sidebar-width";
 import {clearAuthTokenCookie} from "@/lib/auth/clear-auth-cookie";
 import type {SessionRole} from "@/lib/auth/roles";
 
@@ -32,7 +37,11 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "/area-admin/disciplinas": BookOpen,
   "/area-admin/cursos": GraduationCap,
   "/area-admin/campi": Building2,
+  "/area-admin/parametrizacoes": SlidersHorizontal,
   "/area-admin/matriculas": FileCheck2,
+  "/area-admin/consulta-academica": Search,
+  "/area-admin/transferencia-interna": ArrowLeftRight,
+  "/area-admin/emissao-documentos": FileText,
   "/area-admin/usuarios": Users,
   "/area-admin/financeiro/precos": Tag,
   "/area-admin/financeiro/faturas": Receipt,
@@ -57,6 +66,8 @@ export const AdminSidebar = ({
   const navGroups = getAdminNavGroups(role);
   const initial = email.charAt(0).toUpperCase();
   const isProfessor = role === "PROFESSOR";
+  const {isDragging, persistWidth, resetWidth, setIsDragging, setWidth, width} =
+    useAdminSidebarWidth();
 
   const handleLogout = () => {
     void clearAuthTokenCookie().then(() => {
@@ -76,9 +87,9 @@ export const AdminSidebar = ({
       ) : null}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-in-out md:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-40 flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-in-out md:w-[var(--admin-sidebar-width)] md:translate-x-0 ${
           isOpenMobile ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } ${isDragging ? "select-none" : ""}`}
       >
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-5">
           <div className="flex items-center gap-2.5">
@@ -112,38 +123,17 @@ export const AdminSidebar = ({
                 {group.group}
               </div>
               <nav className="space-y-0.5">
-                {group.items.map((item) => {
-                  const Icon = NAV_ICONS[item.href] ?? LayoutDashboard;
-                  const isActive =
-                    pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-                  return (
-                    <Button
-                      className={`h-auto w-full justify-start gap-2.5 px-3 py-2 text-xs font-medium ${
-                        isActive
-                          ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-xs hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      }`}
-                      key={item.href}
-                      nativeButton={false}
-                      onClick={onCloseMobile}
-                      render={<Link href={item.href} />}
-                      variant="ghost"
-                    >
-                      <Icon
-                        className={`size-4 shrink-0 stroke-[1.8] ${
-                          isActive
-                            ? "text-sidebar-primary"
-                            : "text-sidebar-foreground/70"
-                        }`}
-                      />
-                      <span className="flex-1 truncate text-left">{item.label}</span>
-                      {isActive ? (
-                        <ChevronRight className="size-3.5 shrink-0 text-sidebar-foreground/50" />
-                      ) : null}
-                    </Button>
-                  );
-                })}
+                {group.items.map((item) => (
+                  <AdminSidebarNavItem
+                    childIcons={NAV_ICONS}
+                    fallbackIcon={LayoutDashboard}
+                    icon={NAV_ICONS[item.href] ?? LayoutDashboard}
+                    item={item}
+                    key={item.href}
+                    onNavigate={onCloseMobile}
+                    pathname={pathname}
+                  />
+                ))}
               </nav>
             </div>
           ))}
@@ -171,6 +161,13 @@ export const AdminSidebar = ({
             </Button>
           </div>
         </div>
+        <AdminSidebarResizeHandle
+          onDrag={setWidth}
+          onDragEnd={persistWidth}
+          onDraggingChange={setIsDragging}
+          onReset={resetWidth}
+          width={width}
+        />
       </aside>
     </>
   );

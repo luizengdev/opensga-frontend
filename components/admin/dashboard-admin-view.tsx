@@ -13,22 +13,16 @@ import {
 import Link from "next/link";
 
 import {AcademicChartsSection} from "@/components/admin/academic-charts-section";
+import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {ComunicadosResumoCard} from "@/components/admin/comunicados-resumo-card";
 import {StatusFaturaBadge} from "@/components/admin/status-fatura-badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {formatPeriodoLetivo} from "@/lib/academic/periodo-letivo";
+import {buildOfertaPorCurso} from "@/lib/admin/academic-charts";
 import {formatCurrencyBrl, formatDateBr} from "@/lib/admin/format";
-import {STATUS_MATRICULA_LABEL, TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
+import {STATUS_MATRICULA_LABEL} from "@/lib/admin/labels";
 import type {
   AdminDashboard,
   AuditoriaMec,
@@ -46,14 +40,25 @@ import {
   useGetTurmas,
 } from "@/lib/api/rc-generated";
 
-const CICLO_STATUS = ["ATIVO", "PRE_MATRICULADO", "TRANCADO", "CANCELADO"] as const;
+const CICLO_STATUS = [
+  "ATIVO",
+  "PRE_MATRICULADO",
+  "TRANCADO",
+  "CANCELADO",
+  "FORMADO",
+  "EVADIDO",
+  "TRANSFERIDO",
+] as const;
 
-const CICLO_DOT = {
+const CICLO_DOT: Record<(typeof CICLO_STATUS)[number], string> = {
   ATIVO: "bg-success",
   PRE_MATRICULADO: "bg-info",
   TRANCADO: "bg-warning",
   CANCELADO: "bg-destructive",
-} as const;
+  FORMADO: "bg-primary",
+  EVADIDO: "bg-muted-foreground",
+  TRANSFERIDO: "bg-chart-2",
+};
 
 interface DashboardAdminViewProps {
   initialAuditorias: AuditoriaMec[];
@@ -120,6 +125,7 @@ export const DashboardAdminView = ({
     .reduce((acc, fatura) => acc + fatura.valor, 0);
 
   const periodoLabel = formatPeriodoLetivo(periodo);
+  const ofertaPorCurso = buildOfertaPorCurso(turmasPeriodo, listaCampi);
 
   return (
     <div className="space-y-6">
@@ -252,15 +258,15 @@ export const DashboardAdminView = ({
         turmas={turmasPeriodo}
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-stretch">
+        <Card className="h-full">
           <CardHeader>
             <CardTitle>Ciclo de matrículas</CardTitle>
             <CardDescription>
               Distribuição dos registros discentes no período letivo {periodoLabel}.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="flex flex-1 flex-col gap-3">
             {CICLO_STATUS.map((status) => {
               const count = quantidadePorStatus(status);
               const percent =
@@ -288,7 +294,7 @@ export const DashboardAdminView = ({
                 </div>
               );
             })}
-            <div className="flex items-center justify-between border-t border-border pt-3">
+            <div className="mt-auto flex items-center justify-between border-t border-border pt-3">
               <span className="text-xs text-muted-foreground">Auditoria de vagas</span>
               <Button
                 className="h-7 gap-1 px-2 text-xs"
@@ -303,64 +309,63 @@ export const DashboardAdminView = ({
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card className="h-full lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Turmas ativas no semestre ({periodoLabel})</CardTitle>
+              <CardTitle>Oferta ativa por curso ({periodoLabel})</CardTitle>
               <CardDescription>
-                Oferta de disciplinas com professor titular e taxa de ocupação.
+                Quantidade de turmas e ocupação das vagas, agrupadas por curso.
               </CardDescription>
             </div>
             <Button nativeButton={false} render={<Link href="/area-admin/turmas" />} size="sm" variant="outline">
-              Ver todas
+              Ver turmas
             </Button>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Disciplina</TableHead>
-                  <TableHead>Professor titular</TableHead>
-                  <TableHead>Horário</TableHead>
-                  <TableHead className="text-right">Ocupação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {turmasPeriodo.map((turma) => (
-                  <TableRow key={turma.id}>
-                    <TableCell>
-                      <Button
-                        className="h-auto p-0 font-mono"
-                        nativeButton={false} render={<Link href={`/area-admin/turmas/${turma.id}`} />}
-                        variant="link"
-                      >
-                        {turma.codigo}
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-foreground">{turma.disciplina.nome}</div>
-                      <div className="font-mono text-[10px] text-muted-foreground">
-                        {turma.disciplina.codigo} · {TIPO_ENTREGA_LABEL[turma.tipoEntrega]}
+          <CardContent className="flex flex-1 flex-col gap-4">
+            {ofertaPorCurso.length === 0 ? (
+              <AdminEmptyState
+                description="Não há turmas ofertadas neste período letivo."
+                icon={Layers}
+                title="Nenhuma oferta no semestre"
+              />
+            ) : (
+              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                {ofertaPorCurso.map((curso) => (
+                  <div
+                    className="flex items-center justify-between gap-3 rounded-[calc(var(--radius)-4px)] bg-muted/40 p-2.5"
+                    key={curso.cursoId}
+                  >
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate text-xs font-medium text-foreground">{curso.nome}</p>
+                        <p className="shrink-0 font-mono text-xs font-semibold tabular-nums">
+                          {curso.quantidadeTurmas}{" "}
+                          <span className="font-sans text-[10px] font-normal text-muted-foreground">
+                            {curso.quantidadeTurmas === 1 ? "turma" : "turmas"}
+                          </span>
+                        </p>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {turma.professor.user.nome}
-                    </TableCell>
-                    <TableCell className="font-mono text-[11px] text-muted-foreground">
-                      {turma.horario}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {turma.quantidadeDiarios ?? 0}/{turma.capacidade}
-                    </TableCell>
-                  </TableRow>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full bg-primary"
+                          style={{width: `${Math.min(curso.percentual, 100)}%`}}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+                        <span className="truncate">{curso.campusNome}</span>
+                        <span className="shrink-0 tabular-nums">
+                          {curso.inscritos}/{curso.capacidade} · {curso.percentual}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-            <div className="mt-4 flex items-center justify-between rounded-[calc(var(--radius)-4px)] border border-border bg-muted/40 p-3 text-xs">
+              </div>
+            )}
+            <div className="mt-auto flex items-center justify-between rounded-[calc(var(--radius)-4px)] border border-border bg-muted/40 p-3 text-xs">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Layers className="size-4 text-primary" />
-                Auditoria regulamentar MEC: Resolução CNE/CES nº 7/2018 (extensão ≥ 10%)
+                Auditoria regulamentar MEC: Resolução CNE/CES nº 7/2018 (extensão mínima institucional)
               </div>
               <Button nativeButton={false} render={<Link href="/area-admin/matrizes" />} size="sm" variant="outline">
                 Consultar matrizes

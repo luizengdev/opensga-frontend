@@ -219,6 +219,7 @@ export interface AuditoriaMec {
   chExtensaoTotal: number;
   chExtensaoPorTipo: number;
   percentualExtensao: number;
+  percentualMinimoExtensao?: number;
   cumpreRegra10PorcentoExtensao: boolean;
   chPresencialTotal: number;
   percentualPresencial: number;
@@ -539,4 +540,34 @@ export interface Reclamacao {
   status: StatusReclamacao;
   criadoEm: string;
   usuario: {id: string; nome: string; email: string; role: AuthRole};
+}
+
+export interface Parametrizacoes {
+  id: string;
+  nomeIes: string;
+  siglaIes: string;
+  mantenedora: string;
+  cnpj: string;
+  anoLetivo: number;
+  semestreLetivo: number;
+  periodoAutomatico: boolean;
+  corteAprovacaoDireta: number;
+  corteMediaFinal: number;
+  limiteFaltasPercentual: number;
+  percentualMinimoExtensao: number;
+  atualizadoEm: string;
+}
+
+export interface UpdateParametrizacoesInput {
+  nomeIes?: string;
+  siglaIes?: string;
+  mantenedora?: string;
+  cnpj?: string;
+  anoLetivo?: number;
+  semestreLetivo?: number;
+  periodoAutomatico?: boolean;
+  corteAprovacaoDireta?: number;
+  corteMediaFinal?: number;
+  limiteFaltasPercentual?: number;
+  percentualMinimoExtensao?: number;
 }

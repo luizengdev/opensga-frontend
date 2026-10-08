@@ -17,12 +17,14 @@ import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {formatPeriodoLetivo} from "@/lib/academic/periodo-letivo";
+import {formatCorteNota, formatPercentualRegra, REGULAMENTO_PADRAO} from "@/lib/academic/regulamento";
 import {TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
 import type {Comunicado, DiarioClasse, ProfessorDashboard, Turma} from "@/lib/api/fetch-generated";
 import {
   useGetComunicados,
   useGetDashboardProfessor,
   useGetDiarios,
+  useGetParametrizacoes,
   useGetTurmas,
 } from "@/lib/api/rc-generated";
 
@@ -41,6 +43,11 @@ export const DashboardProfessorView = ({
   initialTurmas,
   nome,
 }: DashboardProfessorViewProps) => {
+  const {data: parametros} = useGetParametrizacoes();
+  const corteDireta = parametros?.corteAprovacaoDireta ?? REGULAMENTO_PADRAO.corteAprovacaoDireta;
+  const corteFinal = parametros?.corteMediaFinal ?? REGULAMENTO_PADRAO.corteMediaFinal;
+  const limiteFaltas = parametros?.limiteFaltasPercentual ?? REGULAMENTO_PADRAO.limiteFaltasPercentual;
+  const frequenciaMinima = 100 - limiteFaltas;
   const periodo = {
     anoLetivo: initialDashboard.anoLetivo,
     semestreLetivo: initialDashboard.semestreLetivo,
@@ -95,13 +102,14 @@ export const DashboardProfessorView = ({
           </div>
           <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-card p-2.5">
             <span className="mb-0.5 block font-semibold text-foreground">Aprovação direta</span>
-            NS ≥ 6,0 e frequência ≥ 75% (faltas ≤ 25% da CH)
+            NS ≥ {formatCorteNota(corteDireta)} e frequência ≥ {frequenciaMinima}% (faltas ≤{" "}
+            {formatPercentualRegra(limiteFaltas)} da CH)
           </div>
           <div className="rounded-[calc(var(--radius)-4px)] border border-border bg-card p-2.5">
             <span className="mb-0.5 block font-semibold text-foreground">AV3</span>
-            Se NS &lt; 6,0:{" "}
+            Se NS &lt; {formatCorteNota(corteDireta)}:{" "}
             <code className="font-mono font-semibold text-primary">MF = (NS + AV3) / 2</code>{" "}
-            (aprovado se MF ≥ 5,0)
+            (aprovado se MF ≥ {formatCorteNota(corteFinal)})
           </div>
         </div>
       </div>

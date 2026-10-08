@@ -5,17 +5,25 @@ import {type ReactNode, useState} from "react";
 import {AdminHeader} from "@/components/admin/admin-header";
 import {AdminSidebar} from "@/components/admin/admin-sidebar";
 import {SessionIdleGuard} from "@/components/auth/session-idle-guard";
+import type {Parametrizacoes} from "@/lib/api/fetch-generated";
 import type {SessionRole} from "@/lib/auth/roles";
 import {ADMIN_IDLE_MS} from "@/lib/auth/session-idle";
 
 interface AdminShellProps {
   children: ReactNode;
   email: string;
+  initialParametrizacoes: Parametrizacoes;
   nome: string;
   role: SessionRole;
 }
 
-export const AdminShell = ({children, email, nome, role}: AdminShellProps) => {
+export const AdminShell = ({
+  children,
+  email,
+  initialParametrizacoes,
+  nome,
+  role,
+}: AdminShellProps) => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
@@ -27,9 +35,10 @@ export const AdminShell = ({children, email, nome, role}: AdminShellProps) => {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         role={role}
       />
-      <div className="flex min-w-0 flex-1 flex-col md:pl-64">
+      <div className="flex min-w-0 flex-1 flex-col md:pl-[var(--admin-sidebar-width)]">
         <AdminHeader
           email={email}
+          initialParametrizacoes={initialParametrizacoes}
           nome={nome}
           onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
           role={role}

@@ -19,6 +19,7 @@ import {DashboardMensalidadeCard} from "@/components/aluno/dashboard-mensalidade
 import {Button} from "@/components/ui/button";
 import {limiteFaltasDaDisciplina} from "@/lib/academic/carga-horaria";
 import {formatPeriodoLetivo} from "@/lib/academic/periodo-letivo";
+import {formatPercentualRegra, REGULAMENTO_PADRAO} from "@/lib/academic/regulamento";
 import {
   frequenciaPercentual,
   isRiscoRf,
@@ -28,7 +29,7 @@ import {firstName, resumoTexto} from "@/lib/aluno/labels";
 import {withAlunoQuery} from "@/lib/aluno/nav";
 import {formatDateBr} from "@/lib/admin/format";
 import {MODALIDADE_LABEL, TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
-import {useGetPortalContexto} from "@/lib/api/rc-generated";
+import {useGetParametrizacoes, useGetPortalContexto} from "@/lib/api/rc-generated";
 import type {PortalContexto} from "@/lib/api/fetch-generated";
 
 interface DashboardViewProps {
@@ -39,6 +40,8 @@ export const DashboardView = ({initialData}: DashboardViewProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const alunoId = searchParams.get("alunoId") ?? initialData.alunoId ?? undefined;
+  const {data: parametros} = useGetParametrizacoes();
+  const limiteFaltasPct = parametros?.limiteFaltasPercentual ?? REGULAMENTO_PADRAO.limiteFaltasPercentual;
   const {data} = useGetPortalContexto({
     alunoId,
     query: {initialData},
@@ -71,7 +74,11 @@ export const DashboardView = ({initialData}: DashboardViewProps) => {
 
   const faturaAberta = faturas.find((fatura) => fatura.status === "PENDENTE" || fatura.status === "ATRASADA");
   const disciplinaRiscoFalta = disciplinas.find((disciplina) =>
-    isRiscoRf({totalFaltas: disciplina.totalFaltas, chTotal: disciplina.chTotal}),
+    isRiscoRf({
+      totalFaltas: disciplina.totalFaltas,
+      chTotal: disciplina.chTotal,
+      limiteFaltasPercentual: limiteFaltasPct,
+    }),
   );
   const disciplinaAv3 = disciplinas.find((disciplina) => disciplina.habilitaAv3);
   const proximaDisciplina = disciplinas[0];
@@ -189,14 +196,14 @@ export const DashboardView = ({initialData}: DashboardViewProps) => {
                 <p className="font-heading text-base font-bold text-foreground">{disciplinaRiscoFalta.nomeDisciplina}</p>
                 <p className="mt-0.5 text-xs font-semibold text-destructive">
                   {disciplinaRiscoFalta.totalFaltas} faltas (limite{" "}
-                  {limiteFaltasDaDisciplina(disciplinaRiscoFalta.chTotal)}h)
+                  {limiteFaltasDaDisciplina(disciplinaRiscoFalta.chTotal, limiteFaltasPct)}h)
                 </p>
               </>
             ) : (
               <>
                 <p className="font-heading text-base font-bold text-foreground">Frequência protegida</p>
                 <p className="mt-0.5 text-xs font-medium text-muted-foreground">
-                  Nenhuma disciplina no limiar de 25% da CH.
+                  Nenhuma disciplina no limiar de {formatPercentualRegra(limiteFaltasPct)} da CH.
                 </p>
               </>
             )}
@@ -308,7 +315,7 @@ export const DashboardView = ({initialData}: DashboardViewProps) => {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {disciplinas.map((disciplina) => {
-              const limiteFaltas = limiteFaltasDaDisciplina(disciplina.chTotal);
+              const limiteFaltas = limiteFaltasDaDisciplina(disciplina.chTotal, limiteFaltasPct);
               const frequencia = frequenciaPercentual({
                 totalFaltas: disciplina.totalFaltas,
                 chTotal: disciplina.chTotal,
@@ -317,6 +324,7 @@ export const DashboardView = ({initialData}: DashboardViewProps) => {
               const emRiscoFalta = isRiscoRf({
                 totalFaltas: disciplina.totalFaltas,
                 chTotal: disciplina.chTotal,
+                limiteFaltasPercentual: limiteFaltasPct,
               });
 
               return (

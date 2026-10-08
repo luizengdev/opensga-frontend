@@ -1,4 +1,5 @@
 import {limiteFaltasDaDisciplina} from "@/lib/academic/carga-horaria";
+import {formatCorteNota, formatPercentualRegra, REGULAMENTO_PADRAO} from "@/lib/academic/regulamento";
 
 export const previewLancamento = ({
   notaAv,
@@ -6,17 +7,23 @@ export const previewLancamento = ({
   notaAv3,
   totalFaltas,
   chTotal,
+  corteAprovacaoDireta = REGULAMENTO_PADRAO.corteAprovacaoDireta,
+  limiteFaltasPercentual = REGULAMENTO_PADRAO.limiteFaltasPercentual,
 }: {
   notaAv: number | undefined;
   notaAvs: number | undefined;
   notaAv3: number | undefined;
   totalFaltas: number;
   chTotal: number;
+  corteAprovacaoDireta?: number;
+  limiteFaltasPercentual?: number;
 }) => {
-  const limiteFaltas = limiteFaltasDaDisciplina(chTotal);
+  const limiteFaltas = limiteFaltasDaDisciplina(chTotal, limiteFaltasPercentual);
   const avValida = notaAv !== undefined && !Number.isNaN(notaAv);
   const avsValida = notaAvs !== undefined && !Number.isNaN(notaAvs);
   const riscoRf = chTotal > 0 && totalFaltas > limiteFaltas;
+  const corteLabel = formatCorteNota(corteAprovacaoDireta);
+  const faltasLabel = formatPercentualRegra(limiteFaltasPercentual);
 
   if (!avValida && !avsValida) {
     return {
@@ -25,7 +32,7 @@ export const previewLancamento = ({
       habilitaAv3: false,
       riscoRf,
       status: riscoRf
-        ? "Lançamento parcial · risco de RF no fechamento (faltas > 25% da CH)"
+        ? `Lançamento parcial · risco de RF no fechamento (faltas > ${faltasLabel} da CH)`
         : "Lançamento parcial · NS e resultado só consolidam no fechamento",
     };
   }
@@ -38,17 +45,17 @@ export const previewLancamento = ({
       mf: "—",
       habilitaAv3: false,
       riscoRf: true,
-      status: "Risco de RF no fechamento. Faltas > 25% da CH tornam as notas irrelevantes.",
+      status: `Risco de RF no fechamento. Faltas > ${faltasLabel} da CH tornam as notas irrelevantes.`,
     };
   }
 
-  if (ns >= 6) {
+  if (ns >= corteAprovacaoDireta) {
     return {
       ns: ns.toFixed(1),
       mf: "—",
       habilitaAv3: false,
       riscoRf: false,
-      status: "NS ≥ 6,0 · aprovação e CH só entram no fechamento do semestre",
+      status: `NS ≥ ${corteLabel} · aprovação e CH só entram no fechamento do semestre`,
     };
   }
 

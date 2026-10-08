@@ -12,16 +12,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  formatPeriodoLetivo,
-  getPeriodoLetivoAtual,
-} from "@/lib/academic/periodo-letivo";
+import {formatPeriodoLetivo, getPeriodoLetivoAtual} from "@/lib/academic/periodo-letivo";
 import {getAdminBreadcrumb} from "@/lib/admin/nav";
+import type {Parametrizacoes} from "@/lib/api/fetch-generated";
+import {useGetParametrizacoes} from "@/lib/api/rc-generated";
 import {clearAuthTokenCookie} from "@/lib/auth/clear-auth-cookie";
 import type {SessionRole} from "@/lib/auth/roles";
 
 interface AdminHeaderProps {
   email: string;
+  initialParametrizacoes: Parametrizacoes;
   nome: string;
   onOpenMobileSidebar: () => void;
   role: SessionRole;
@@ -29,12 +29,14 @@ interface AdminHeaderProps {
 
 export const AdminHeader = ({
   email,
+  initialParametrizacoes,
   nome,
   onOpenMobileSidebar,
   role,
 }: AdminHeaderProps) => {
   const pathname = usePathname();
-  const periodo = getPeriodoLetivoAtual();
+  const {data: parametros} = useGetParametrizacoes({initialData: initialParametrizacoes});
+  const periodo = getPeriodoLetivoAtual(parametros ?? initialParametrizacoes);
   const {resolvedTheme, setTheme} = useTheme();
   const isDarkMode = resolvedTheme === "dark";
   const initial = nome.charAt(0).toUpperCase();
@@ -80,6 +82,9 @@ export const AdminHeader = ({
           <span className="font-medium">Período:</span>
           <span className="font-mono font-medium">
             {formatPeriodoLetivo(periodo)}
+          </span>
+          <span className="text-muted-foreground">
+            {(parametros ?? initialParametrizacoes).periodoAutomatico ? "auto" : "manual"}
           </span>
         </div>
 

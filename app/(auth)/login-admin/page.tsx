@@ -19,26 +19,12 @@ const LoginAdminPage = async () => {
       <NexaUniversityMark />
 
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
-        <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground">
-          Acesso interno
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Secretaria, coordenação e corpo docente.
-        </p>
+        <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground">Acesso interno</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Secretaria, coordenação e corpo docente.</p>
 
         <div className="mt-8">
           <LoginAdminForm />
         </div>
-
-        <Link
-          className={cn(
-            buttonVariants({variant: "link"}),
-            "mt-8 h-auto justify-start px-0",
-          )}
-          href="/login-aluno"
-        >
-          Área do aluno
-        </Link>
       </div>
     </div>
   );

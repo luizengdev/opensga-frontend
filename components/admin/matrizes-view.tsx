@@ -327,12 +327,12 @@ export const MatrizesView = ({
                 {relatorio.cumpreRegra10PorcentoExtensao ? (
                   <Badge>
                     <CheckCircle2 />
-                    Extensão ≥ 10%
+                    Extensão ≥ {relatorio.percentualMinimoExtensao ?? 10}%
                   </Badge>
                 ) : (
                   <Badge variant="destructive">
                     <AlertTriangle />
-                    Extensão &lt; 10%
+                    Extensão &lt; {relatorio.percentualMinimoExtensao ?? 10}%
                   </Badge>
                 )}
               </div>
@@ -356,7 +356,7 @@ export const MatrizesView = ({
           <CardContent className="space-y-4 pt-4">
             <div>
               <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Limiar MEC: 10%</span>
+                <span>Limiar institucional: {relatorio.percentualMinimoExtensao ?? 10}%</span>
                 <span className="font-mono">{formatPercent(relatorio.percentualExtensao)}</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-muted">

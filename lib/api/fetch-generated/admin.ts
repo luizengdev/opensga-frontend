@@ -40,7 +40,9 @@ import type {
   StatusMatricula,
   StatusReclamacao,
   ModeloDocumento,
+  Parametrizacoes,
   UpdateModeloDocumentoInput,
+  UpdateParametrizacoesInput,
   TransferenciaInterna,
   TransferenciaInternaInput,
   TransferenciaPreview,
@@ -255,3 +257,11 @@ export const responderReclamacao = async ({id, resposta}: {id: string; resposta:
   });
 export const fecharReclamacao = async (id: string) =>
   requestApi<Reclamacao>(`/api/v1/ouvidoria/reclamacoes/${id}/fechar`, {method: "PATCH"});
+
+export const getParametrizacoes = async () =>
+  requestApi<Parametrizacoes>("/api/v1/parametrizacoes");
+export const updateParametrizacoes = async (data: UpdateParametrizacoesInput) =>
+  requestApi<Parametrizacoes>("/api/v1/parametrizacoes", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });

@@ -2,7 +2,7 @@ import {useEffect, useMemo, useState} from "react";
 
 export const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50] as const;
 
-export const useClientPagination = <T,>({
+export const useClientPagination = <T>({
   items,
   initialPageSize = 10,
   resetKey,
@@ -17,7 +17,9 @@ export const useClientPagination = <T,>({
   const currentPage = Math.min(page, pageCount);
 
   useEffect(() => {
-    setPage(1);
+    setTimeout(() => {
+      setPage(1);
+    }, 0);
   }, [resetKey]);
 
   const pageItems = useMemo(() => {

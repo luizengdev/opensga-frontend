@@ -4,6 +4,7 @@ import {
   getCampi,
   getCursos,
   getMatrizes,
+  getParametrizacoes,
   getProfessores,
   getTurmas,
 } from "@/lib/api/fetch-generated";
@@ -11,7 +12,8 @@ import {requireAdminSession} from "@/lib/auth/require-admin-session";
 
 const TurmasAdminPage = async () => {
   const session = await requireAdminSession();
-  const periodo = getPeriodoLetivoAtual();
+  const parametros = await getParametrizacoes();
+  const periodo = getPeriodoLetivoAtual(parametros);
   const isAdmin = session.role === "ADMIN";
 
   const [turmas, campi, cursos, matrizes, professores] = await Promise.all([

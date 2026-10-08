@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/table";
 import {limiteFaltasDaDisciplina} from "@/lib/academic/carga-horaria";
 import {previewLancamento} from "@/lib/academic/lancamento-preview";
+import {formatCorteNota, formatPercentualRegra, REGULAMENTO_PADRAO} from "@/lib/academic/regulamento";
 import {TIPO_ENTREGA_LABEL} from "@/lib/admin/labels";
 import {useClientPagination} from "@/lib/admin/use-client-pagination";
 import {getMutationErrorMessage, isConflictError} from "@/lib/admin/mutation-error";
@@ -74,6 +75,7 @@ import {
   useEnturmarAluno,
   useFecharSemestre,
   useGetDiarios,
+  useGetParametrizacoes,
   useGetTurma,
 } from "@/lib/api/rc-generated";
 
@@ -125,6 +127,11 @@ export const TurmaDetailView = ({
   isAdmin,
 }: TurmaDetailViewProps) => {
   const queryClient = useQueryClient();
+  const {data: parametros} = useGetParametrizacoes();
+  const corteDireta = parametros?.corteAprovacaoDireta ?? REGULAMENTO_PADRAO.corteAprovacaoDireta;
+  const corteFinal = parametros?.corteMediaFinal ?? REGULAMENTO_PADRAO.corteMediaFinal;
+  const limiteFaltasPercentual =
+    parametros?.limiteFaltasPercentual ?? REGULAMENTO_PADRAO.limiteFaltasPercentual;
   const {data: turma} = useGetTurma(initialTurma.id, {initialData: initialTurma});
   const {data: diarios} = useGetDiarios({
     query: {turmaId: initialTurma.id},
@@ -167,11 +174,11 @@ export const TurmaDetailView = ({
   });
 
   const chTurma = atual.chTotal ?? listaDiarios.find((diario) => diario.chTotal > 0)?.chTotal ?? 0;
-  const limiteTurma = limiteFaltasDaDisciplina(chTurma);
+  const limiteTurma = limiteFaltasDaDisciplina(chTurma, limiteFaltasPercentual);
   const notas = avaliacaoForm.watch();
   const chLancamento =
     diarioSelecionado && diarioSelecionado.chTotal > 0 ? diarioSelecionado.chTotal : chTurma;
-  const limiteLancamento = limiteFaltasDaDisciplina(chLancamento);
+  const limiteLancamento = limiteFaltasDaDisciplina(chLancamento, limiteFaltasPercentual);
   const preview = useMemo(
     () =>
       previewLancamento({
@@ -180,8 +187,10 @@ export const TurmaDetailView = ({
         notaAv3: parseNota(notas.notaAv3),
         totalFaltas: Number(notas.totalFaltas) || 0,
         chTotal: chLancamento,
+        corteAprovacaoDireta: corteDireta,
+        limiteFaltasPercentual,
       }),
-    [chLancamento, notas],
+    [chLancamento, corteDireta, limiteFaltasPercentual, notas],
   );
 
   const invalidate = () => {
@@ -372,9 +381,10 @@ export const TurmaDetailView = ({
             Lançamento calcula{" "}
             <strong className="font-mono text-foreground">NS = MAX(AV, AVS)</strong> e habilita AV3.
             Aprovação, RF, RN e CH cumprida só no{" "}
-            <strong className="text-foreground">fechamento do semestre</strong>. RF se faltas &gt; 25%
-            da CH da disciplina. AV3:{" "}
-            <strong className="font-mono text-foreground">MF = (NS + AV3) / 2</strong> (corte 5,0).
+            <strong className="text-foreground">fechamento do semestre</strong>. RF se faltas &gt;{" "}
+            {formatPercentualRegra(limiteFaltasPercentual)} da CH da disciplina. AV3:{" "}
+            <strong className="font-mono text-foreground">MF = (NS + AV3) / 2</strong> (corte{" "}
+            {formatCorteNota(corteFinal)}).
           </p>
         </div>
         <span className="shrink-0 rounded border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground">
@@ -421,7 +431,7 @@ export const TurmaDetailView = ({
               <TableBody>
                 {pagination.pageItems.map((diario) => {
                   const chDiario = diario.chTotal > 0 ? diario.chTotal : chTurma;
-                  const limiteDiario = limiteFaltasDaDisciplina(chDiario);
+                  const limiteDiario = limiteFaltasDaDisciplina(chDiario, limiteFaltasPercentual);
                   const riscoRf =
                     diario.statusDisciplina === "EM_ABERTO" && chDiario > 0 && diario.totalFaltas > limiteDiario;
                   const email = emailPorMatricula.get(diario.matriculaId);
@@ -616,7 +626,9 @@ export const TurmaDetailView = ({
                         />
                       </FormControl>
                       <FormDescription className="text-[11px]">
-                        {preview.habilitaAv3 ? "Recuperação final · NS < 6,0" : "Habilitada só se NS < 6,0"}
+                        {preview.habilitaAv3
+                          ? `Recuperação final · NS < ${formatCorteNota(corteDireta)}`
+                          : `Habilitada só se NS < ${formatCorteNota(corteDireta)}`}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -643,8 +655,8 @@ export const TurmaDetailView = ({
                       </FormControl>
                       <FormDescription className="text-[11px]">
                         {chLancamento > 0
-                          ? `Limite legal: ${limiteLancamento}h (25% de ${chLancamento}h)`
-                          : "Limite de 25% sobre a CH da disciplina na matriz"}
+                          ? `Limite institucional: ${limiteLancamento}h (${formatPercentualRegra(limiteFaltasPercentual)} de ${chLancamento}h)`
+                          : `Limite de ${formatPercentualRegra(limiteFaltasPercentual)} sobre a CH da disciplina na matriz`}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -683,7 +695,7 @@ export const TurmaDetailView = ({
 
       <ConfirmDialog
         confirmLabel="Fechar semestre"
-        description={`O fechamento da turma ${atual.codigo} integraliza a CH dos aprovados, aplica RF se as faltas ultrapassarem 25% da carga e calcula a AV3. Esta ação não pode ser desfeita.`}
+        description={`O fechamento da turma ${atual.codigo} integraliza a CH dos aprovados, aplica RF se as faltas ultrapassarem ${formatPercentualRegra(limiteFaltasPercentual)} da carga e calcula a AV3. Esta ação não pode ser desfeita.`}
         icon={Lock}
         isPending={isFechando}
         onConfirm={onFecharSemestre}
@@ -703,7 +715,7 @@ export const TurmaDetailView = ({
           }
         }}
         open={fechamentoConflict !== null}
-        recommendedAction="Lance AV ou AVS para obter a NS e, se NS < 6,0 com frequência regular, informe a AV3. Nenhum diário é persistido até a turma estar completa."
+        recommendedAction={`Lance AV ou AVS para obter a NS e, se NS < ${formatCorteNota(corteDireta)} com frequência regular, informe a AV3. Nenhum diário é persistido até a turma estar completa.`}
         ruleLabel="POST /diario/fechar-semestre"
         title={`Fechamento bloqueado: turma ${atual.codigo}`}
       />
