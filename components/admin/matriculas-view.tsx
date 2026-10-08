@@ -15,6 +15,7 @@ import {AdminSelect} from "@/components/admin/admin-select";
 import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {StatusMatriculaBadge} from "@/components/admin/status-matricula-badge";
 import {Badge} from "@/components/ui/badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -433,8 +434,12 @@ export const MatriculasView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isUpdating} type="submit">
-                  <Check />
-                  Atualizar status
+                  <PendingButtonLabel
+                    icon={<Check />}
+                    isPending={isUpdating}
+                    label="Atualizar status"
+                    pendingLabel="Atualizando..."
+                  />
                 </Button>
               </DialogFooter>
             </form>
@@ -586,7 +591,7 @@ export const MatriculasView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isCreating} type="submit">
-                  Concluir matrícula
+                  <PendingButtonLabel isPending={isCreating} label="Concluir matrícula" pendingLabel="Salvando..." />
                 </Button>
               </DialogFooter>
             </form>

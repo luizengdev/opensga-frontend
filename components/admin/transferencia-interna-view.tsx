@@ -14,9 +14,11 @@ import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
 import {ConfirmDialog} from "@/components/admin/confirm-dialog";
 import {StatusMatriculaBadge} from "@/components/admin/status-matricula-badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Spinner} from "@/components/ui/spinner";
 import {
   Form,
   FormControl,
@@ -408,12 +410,15 @@ export const TransferenciaInternaView = ({
                     </div>
                   </div>
                 ) : isPreviewLoading ? (
-                  <p className="text-xs text-muted-foreground">Simulando aproveitamento de disciplinas…</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Spinner className="size-4" />
+                    Simulando aproveitamento de disciplinas…
+                  </div>
                 ) : null}
 
                 <div>
                   <Button disabled={isPending || !preview} type="submit">
-                    Revisar transferência
+                    <PendingButtonLabel isPending={isPending} label="Revisar transferência" />
                   </Button>
                 </div>
               </form>

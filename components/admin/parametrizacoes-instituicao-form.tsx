@@ -7,6 +7,7 @@ import {useForm} from "react-hook-form";
 import {toast} from "sonner";
 import {z} from "zod";
 
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 import {
@@ -174,7 +175,7 @@ export const ParametrizacoesInstituicaoForm = ({
           </CardContent>
           <CardFooter>
             <Button disabled={isPending} type="submit">
-              {isPending ? "Salvando..." : "Salvar identidade"}
+              <PendingButtonLabel isPending={isPending} label="Salvar identidade" pendingLabel="Salvando..." />
             </Button>
           </CardFooter>
         </form>

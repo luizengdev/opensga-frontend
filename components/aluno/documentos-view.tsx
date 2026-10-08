@@ -14,6 +14,7 @@ import {
 import {AlunoEmptyState} from "@/components/aluno/aluno-empty-state";
 import {AlunoPageHeader} from "@/components/aluno/aluno-page-header";
 import {DocumentViewerDialog} from "@/components/aluno/document-viewer-dialog";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {useEmitirDocumento} from "@/lib/aluno/use-emitir-documento";
 import {usePortalAluno} from "@/lib/aluno/use-portal-contexto";
@@ -104,8 +105,12 @@ export const DocumentosView = ({initialCatalogo, initialData}: DocumentosViewPro
                     onClick={() => emitir({tipo: item.tipo, alunoId})}
                     size="sm"
                   >
-                    <Download className="size-3.5" />
-                    {tipoPendente === item.tipo ? "Emitindo…" : "Visualizar & Baixar"}
+                    <PendingButtonLabel
+                      icon={<Download className="size-3.5" />}
+                      isPending={tipoPendente === item.tipo}
+                      label="Visualizar & Baixar"
+                      pendingLabel="Emitindo…"
+                    />
                   </Button>
                 </div>
               </div>

@@ -14,6 +14,7 @@ import {AdminSearchField} from "@/components/admin/admin-search-field";
 import {AdminSelect} from "@/components/admin/admin-select";
 import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {Badge} from "@/components/ui/badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -408,7 +409,11 @@ export const CursosView = ({initialCampi, initialCursos}: CursosViewProps) => {
                   Cancelar
                 </Button>
                 <Button disabled={isCreating || isUpdating} type="submit">
-                  {editing ? "Salvar" : "Cadastrar"}
+                  <PendingButtonLabel
+                    isPending={isCreating || isUpdating}
+                    label={editing ? "Salvar" : "Cadastrar"}
+                    pendingLabel={editing ? "Salvando..." : "Cadastrando..."}
+                  />
                 </Button>
               </DialogFooter>
             </form>

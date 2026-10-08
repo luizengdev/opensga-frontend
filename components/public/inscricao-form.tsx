@@ -8,6 +8,7 @@ import {z} from "zod";
 import dayjs from "dayjs";
 
 import {InscricaoIngressoOptions} from "@/components/public/inscricao-ingresso-options";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {
   Form,
@@ -308,7 +309,11 @@ export const InscricaoForm = ({curso, onBack, onCompleted}: InscricaoFormProps) 
               className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
               disabled={isCreating}
             >
-              {isCreating ? "Enviando inscrição..." : "Concluir inscrição"}
+              <PendingButtonLabel
+                isPending={isCreating}
+                label="Concluir inscrição"
+                pendingLabel="Enviando inscrição..."
+              />
             </Button>
           )}
         </div>

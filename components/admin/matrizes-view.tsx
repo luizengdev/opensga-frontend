@@ -16,6 +16,8 @@ import {ConfirmDialog} from "@/components/admin/confirm-dialog";
 import {ConflictDialog} from "@/components/admin/conflict-dialog";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 import {Badge} from "@/components/ui/badge";
+import {PageLoading} from "@/components/page-loading";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader} from "@/components/ui/card";
 import {
@@ -430,6 +432,10 @@ export const MatrizesView = ({
         </Card>
       ) : null}
 
+      {matrizAtual && isFetchingComponentes && listaComponentes.length === 0 ? (
+        <PageLoading label="Carregando componentes da matriz…" />
+      ) : null}
+
       {matrizAtual && listaComponentes.length > 0 ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
@@ -541,7 +547,7 @@ export const MatrizesView = ({
         </div>
       ) : null}
 
-      {matrizAtual && listaComponentes.length === 0 ? (
+      {matrizAtual && listaComponentes.length === 0 && !isFetchingComponentes ? (
         <Card>
           <AdminEmptyState
             description="Adicione disciplinas com carga horária e tipo de entrega para calcular a extensão."
@@ -728,7 +734,7 @@ export const MatrizesView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isCreatingMatriz} type="submit">
-                  Cadastrar
+                  <PendingButtonLabel isPending={isCreatingMatriz} label="Cadastrar" pendingLabel="Cadastrando..." />
                 </Button>
               </DialogFooter>
             </form>
@@ -799,7 +805,7 @@ export const MatrizesView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isAddingComponente} type="submit">
-                  Adicionar
+                  <PendingButtonLabel isPending={isAddingComponente} label="Adicionar" pendingLabel="Adicionando..." />
                 </Button>
               </DialogFooter>
             </form>

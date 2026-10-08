@@ -2,6 +2,7 @@
 
 import {Trash2, type LucideIcon} from "lucide-react";
 
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,7 +68,7 @@ export const ConfirmDialog = ({
             type="button"
             variant="destructive"
           >
-            {confirmLabel}
+            <PendingButtonLabel isPending={isPending} label={confirmLabel} pendingLabel="Processando..." />
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

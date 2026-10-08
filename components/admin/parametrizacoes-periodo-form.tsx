@@ -8,6 +8,7 @@ import {toast} from "sonner";
 import {z} from "zod";
 
 import {AdminSelect} from "@/components/admin/admin-select";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 import {
@@ -161,7 +162,7 @@ export const ParametrizacoesPeriodoForm = ({parametros}: ParametrizacoesPeriodoF
           </CardContent>
           <CardFooter>
             <Button disabled={isPending} type="submit">
-              {isPending ? "Salvando..." : "Salvar período"}
+              <PendingButtonLabel isPending={isPending} label="Salvar período" pendingLabel="Salvando..." />
             </Button>
           </CardFooter>
         </form>

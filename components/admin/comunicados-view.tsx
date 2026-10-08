@@ -12,6 +12,7 @@ import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {ComunicadoMuralCard} from "@/components/admin/comunicado-mural-card";
 import {ConfirmDialog} from "@/components/admin/confirm-dialog";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
 import {
@@ -213,8 +214,12 @@ export const ComunicadosView = ({canManage, initialComunicados}: ComunicadosView
                   Cancelar
                 </Button>
                 <Button disabled={isCreating} type="submit">
-                  <Send />
-                  Publicar comunicado
+                  <PendingButtonLabel
+                    icon={<Send />}
+                    isPending={isCreating}
+                    label="Publicar comunicado"
+                    pendingLabel="Publicando..."
+                  />
                 </Button>
               </DialogFooter>
             </form>

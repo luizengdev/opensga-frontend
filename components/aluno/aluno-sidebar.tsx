@@ -18,6 +18,7 @@ import Link from "next/link";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 
 import {NexaUniversityMark} from "@/components/auth/nexa-university-mark";
+import {NavLinkSpinner} from "@/components/nav-link-spinner";
 import {Button} from "@/components/ui/button";
 import {
   Select,
@@ -186,6 +187,7 @@ export const AlunoSidebar = ({
               >
                 <Icon className="size-4 shrink-0" />
                 <span className="truncate">{item.label}</span>
+                <NavLinkSpinner className="ml-auto text-sidebar-primary" />
               </Button>
             );
           })}

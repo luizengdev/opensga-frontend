@@ -13,6 +13,7 @@ import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSearchField} from "@/components/admin/admin-search-field";
 import {AdminSelect} from "@/components/admin/admin-select";
 import {ReclamacaoProtocoloCard} from "@/components/admin/reclamacao-protocolo-card";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -243,8 +244,12 @@ export const OuvidoriaView = ({initialReclamacoes}: OuvidoriaViewProps) => {
                   Cancelar
                 </Button>
                 <Button disabled={isRespondendo} type="submit">
-                  <Send />
-                  Registrar e notificar
+                  <PendingButtonLabel
+                    icon={<Send />}
+                    isPending={isRespondendo}
+                    label="Registrar e notificar"
+                    pendingLabel="Enviando..."
+                  />
                 </Button>
               </DialogFooter>
             </form>

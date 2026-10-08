@@ -26,6 +26,7 @@ import {AdminSelect} from "@/components/admin/admin-select";
 import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {ConfirmDialog} from "@/components/admin/confirm-dialog";
 import {ConflictDialog} from "@/components/admin/conflict-dialog";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {
@@ -557,7 +558,7 @@ export const TurmaDetailView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isEnturmando} type="submit">
-                  Efetivar Enturmação
+                  <PendingButtonLabel isPending={isEnturmando} label="Efetivar Enturmação" pendingLabel="Enturmando..." />
                 </Button>
               </DialogFooter>
             </form>
@@ -684,8 +685,12 @@ export const TurmaDetailView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isAvaliando} type="submit">
-                  <Save />
-                  Consolidar Lançamento
+                  <PendingButtonLabel
+                    icon={<Save />}
+                    isPending={isAvaliando}
+                    label="Consolidar Lançamento"
+                    pendingLabel="Salvando..."
+                  />
                 </Button>
               </DialogFooter>
             </form>

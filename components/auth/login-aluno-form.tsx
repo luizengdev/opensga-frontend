@@ -4,6 +4,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {useState} from "react";
 import {useForm} from "react-hook-form";
 
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {
   Form,
@@ -102,7 +103,7 @@ export const LoginAlunoForm = () => {
           <p className="text-sm text-destructive">{submitError}</p>
         ) : null}
         <Button className="mt-1 w-full" disabled={isLoggingIn} size="lg" type="submit">
-          {isLoggingIn ? "Entrando..." : "Entrar"}
+          <PendingButtonLabel isPending={isLoggingIn} label="Entrar" pendingLabel="Entrando..." />
         </Button>
       </form>
     </Form>

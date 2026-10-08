@@ -6,6 +6,7 @@ import {CheckCircle2, Send, X} from "lucide-react";
 import {useForm} from "react-hook-form";
 import {z} from "zod";
 
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {
   Dialog,
@@ -187,8 +188,12 @@ export const OuvidoriaTicketDialog = ({
                   Cancelar
                 </DialogClose>
                 <Button className="text-xs font-bold" disabled={isPending} type="submit">
-                  <Send className="size-3.5" />
-                  Protocolar Chamado
+                  <PendingButtonLabel
+                    icon={<Send className="size-3.5" />}
+                    isPending={isPending}
+                    label="Protocolar Chamado"
+                    pendingLabel="Enviando..."
+                  />
                 </Button>
               </div>
             </form>

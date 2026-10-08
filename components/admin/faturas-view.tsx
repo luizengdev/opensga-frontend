@@ -15,6 +15,7 @@ import {AdminSearchField} from "@/components/admin/admin-search-field";
 import {AdminSelect} from "@/components/admin/admin-select";
 import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {StatusFaturaBadge} from "@/components/admin/status-fatura-badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -424,7 +425,7 @@ export const FaturasView = ({initialAlunos, initialFaturas}: FaturasViewProps) =
                   Cancelar
                 </Button>
                 <Button disabled={isCreating} type="submit">
-                  Emitir
+                  <PendingButtonLabel isPending={isCreating} label="Emitir" pendingLabel="Emitindo..." />
                 </Button>
               </DialogFooter>
             </form>
@@ -479,8 +480,12 @@ export const FaturasView = ({initialAlunos, initialFaturas}: FaturasViewProps) =
                   Cancelar
                 </Button>
                 <Button disabled={isUpdating} type="submit">
-                  <Check />
-                  Salvar status
+                  <PendingButtonLabel
+                    icon={<Check />}
+                    isPending={isUpdating}
+                    label="Salvar status"
+                    pendingLabel="Salvando..."
+                  />
                 </Button>
               </DialogFooter>
             </form>

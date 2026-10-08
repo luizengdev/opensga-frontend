@@ -9,6 +9,7 @@ import {z} from "zod";
 import {AdminSelect} from "@/components/admin/admin-select";
 import {DocumentoCorpoEditor} from "@/components/admin/documento-corpo-editor";
 import {Badge} from "@/components/ui/badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
 import {
@@ -170,7 +171,7 @@ export const ModeloDocumentoForm = ({modelo}: ModeloDocumentoFormProps) => {
             )}
           />
           <Button disabled={isPending} type="submit">
-            Salvar modelo
+            <PendingButtonLabel isPending={isPending} label="Salvar modelo" pendingLabel="Salvando..." />
           </Button>
         </form>
       </Form>

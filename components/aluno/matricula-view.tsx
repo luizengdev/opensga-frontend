@@ -6,6 +6,7 @@ import {AlunoEmptyState} from "@/components/aluno/aluno-empty-state";
 import {AlunoPageHeader} from "@/components/aluno/aluno-page-header";
 import {AlunoStatusBadge} from "@/components/aluno/aluno-status-badge";
 import {DocumentViewerDialog} from "@/components/aluno/document-viewer-dialog";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {formatPeriodoLetivo, getPeriodoLetivoAtual} from "@/lib/academic/periodo-letivo";
@@ -51,8 +52,12 @@ export const MatriculaView = ({initialData}: MatriculaViewProps) => {
       <AlunoPageHeader
         actions={
           <Button disabled={isPending} onClick={() => emitir({tipo: "DECLARACAO_MATRICULA", alunoId})}>
-            <FileText className="size-4" />
-            {isPending ? "Emitindo…" : "Emitir Declaração de Matrícula"}
+            <PendingButtonLabel
+              icon={<FileText className="size-4" />}
+              isPending={isPending}
+              label="Emitir Declaração de Matrícula"
+              pendingLabel="Emitindo…"
+            />
           </Button>
         }
         description="Dados institucionais de vínculo, polo presencial e ciclo acadêmico ativo."

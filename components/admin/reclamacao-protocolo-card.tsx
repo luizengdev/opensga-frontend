@@ -3,6 +3,7 @@
 import {Check, CheckCircle2, MessageCircle} from "lucide-react";
 
 import {StatusReclamacaoBadge} from "@/components/admin/status-reclamacao-badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -75,8 +76,12 @@ export const ReclamacaoProtocoloCard = ({
             </Button>
             {reclamacao.status === "RESPONDIDO" ? (
               <Button disabled={isFechando} onClick={onFechar} size="sm" variant="secondary">
-                <Check />
-                Encerrar protocolo
+                <PendingButtonLabel
+                  icon={<Check />}
+                  isPending={isFechando}
+                  label="Encerrar protocolo"
+                  pendingLabel="Encerrando..."
+                />
               </Button>
             ) : null}
           </div>
