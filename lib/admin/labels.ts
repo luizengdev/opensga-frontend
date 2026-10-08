@@ -6,9 +6,11 @@ import type {
   StatusReclamacao,
   TipoCampus,
   TipoComponente,
+  StatusTermoAbertura,
   TipoDocumento,
   TipoEntrega,
   TipoReclamacao,
+  TipoTermoAbertura,
 } from "@/lib/api/fetch-generated";
 
 export const STATUS_MATRICULA_LABEL: Record<StatusMatricula, string> = {
@@ -88,4 +90,15 @@ export const ROLE_LABEL: Record<AuthRole, string> = {
   PROFESSOR: "Professor",
   ALUNO: "Aluno",
   RESPONSAVEL: "Responsável",
+};
+
+export const STATUS_TERMO_ABERTURA_LABEL: Record<StatusTermoAbertura, string> = {
+  PENDENTE: "Pendente",
+  APROVADO: "Aprovado",
+  RECUSADO: "Recusado",
+};
+
+export const TIPO_TERMO_ABERTURA_LABEL: Record<TipoTermoAbertura, string> = {
+  TURMA: "Abertura de turma",
+  INDIVIDUAL: "Alteração individual",
 };

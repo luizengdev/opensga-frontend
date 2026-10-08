@@ -571,3 +571,69 @@ export interface UpdateParametrizacoesInput {
   limiteFaltasPercentual?: number;
   percentualMinimoExtensao?: number;
 }
+
+export type TipoTermoAbertura = "TURMA" | "INDIVIDUAL";
+export type StatusTermoAbertura = "PENDENTE" | "APROVADO" | "RECUSADO";
+
+export interface TermoTurmaResumo {
+  id: string;
+  codigo: string;
+  anoLetivo: number;
+  semestreLetivo: number;
+  curso: {id: string; nome: string};
+  disciplina: {id: string; nome: string; codigo: string};
+}
+
+export interface TermoTurmaDisponivel extends TermoTurmaResumo {
+  diariosFechados: number;
+  diariosTotal: number;
+}
+
+export interface TermoDiarioResumo {
+  id: string;
+  notaAv: number | null;
+  notaAvs: number | null;
+  notaAv3: number | null;
+  notaSemestral: number | null;
+  mediaFinal: number | null;
+  totalFaltas: number;
+  semestreFechado: boolean;
+  aluno: {ra: string; nome: string};
+  turma: TermoTurmaResumo;
+}
+
+export interface TermoAbertura {
+  id: string;
+  tipo: TipoTermoAbertura;
+  status: StatusTermoAbertura;
+  professor: {id: string; matricula: string; nome: string};
+  turma: TermoTurmaResumo | null;
+  diario: TermoDiarioResumo | null;
+  notaAv: number | null;
+  notaAvs: number | null;
+  notaAv3: number | null;
+  totalFaltas: number | null;
+  criadoEm: string;
+  decididoEm: string | null;
+  decididoPor: {id: string; nome: string} | null;
+}
+
+export interface ListTermosQuery {
+  status?: StatusTermoAbertura;
+  tipo?: TipoTermoAbertura;
+  professorId?: string;
+  criadoDe?: string;
+  criadoAte?: string;
+}
+
+export interface CreateTermoTurmaInput {
+  turmaIds: string[];
+}
+
+export interface CreateTermoIndividualInput {
+  diarioClasseId: string;
+  notaAv?: number;
+  notaAvs?: number;
+  notaAv3?: number;
+  totalFaltas?: number;
+}
