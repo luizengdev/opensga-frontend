@@ -12,6 +12,7 @@ import {AdminEmptyState} from "@/components/admin/admin-empty-state";
 import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSelect} from "@/components/admin/admin-select";
 import {Badge} from "@/components/ui/badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -341,7 +342,11 @@ export const CampiView = ({initialCampi, initialCursos}: CampiViewProps) => {
                   Cancelar
                 </Button>
                 <Button disabled={isCreating || isUpdating} type="submit">
-                  {editing ? "Salvar" : "Cadastrar"}
+                  <PendingButtonLabel
+                    isPending={isCreating || isUpdating}
+                    label={editing ? "Salvar" : "Cadastrar"}
+                    pendingLabel={editing ? "Salvando..." : "Cadastrando..."}
+                  />
                 </Button>
               </DialogFooter>
             </form>

@@ -4,6 +4,7 @@ import {ChevronRight, type LucideIcon} from "lucide-react";
 import Link from "next/link";
 import {useEffect, useState} from "react";
 
+import {NavLinkSpinner} from "@/components/nav-link-spinner";
 import {Button} from "@/components/ui/button";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import type {AdminNavItem} from "@/lib/admin/nav";
@@ -64,6 +65,7 @@ export const AdminSidebarNavItem = ({
           }`}
         />
         <span className="flex-1 truncate text-left">{item.label}</span>
+        <NavLinkSpinner className="text-sidebar-primary" />
         {isActive ? <ChevronRight className="size-3.5 shrink-0 text-sidebar-foreground/50" /> : null}
       </Button>
     );
@@ -114,6 +116,7 @@ export const AdminSidebarNavItem = ({
                   }`}
                 />
                 <span className="flex-1 truncate text-left">{child.label}</span>
+                <NavLinkSpinner className="text-sidebar-primary" />
               </Button>
             );
           })}

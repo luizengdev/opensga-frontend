@@ -4,6 +4,7 @@ import {CreditCard, GraduationCap, LayoutDashboard, Menu} from "lucide-react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 
+import {NavLinkSpinner} from "@/components/nav-link-spinner";
 import {Button} from "@/components/ui/button";
 import {withAlunoQuery} from "@/lib/aluno/nav";
 
@@ -37,7 +38,10 @@ export const AlunoMobileNav = ({onOpenMore, selectedAlunoId}: AlunoMobileNavProp
             render={<Link href={withAlunoQuery(item.href, selectedAlunoId)} />}
             variant="ghost"
           >
-            <Icon className="mb-1 size-5" />
+            <span className="relative mb-1 inline-flex size-5 items-center justify-center">
+              <Icon className="size-5" />
+              <NavLinkSpinner className="absolute size-3.5 text-foreground" />
+            </span>
             <span className="text-[10px] font-bold">{item.label}</span>
           </Button>
         );

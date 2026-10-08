@@ -4,6 +4,7 @@ import {useMutation, useQuery} from "@tanstack/react-query";
 
 import {
   addComponenteMatriz,
+  aprovarTermo,
   avaliarDiario,
   changePassword,
   createAdminUser,
@@ -19,6 +20,8 @@ import {
   deleteMatriz,
   createPreco,
   createProfessor,
+  createTermoIndividual,
+  createTermosTurma,
   createTurma,
   deleteCampus,
   deleteComponente,
@@ -57,11 +60,15 @@ import {
   getPrecos,
   getProfessores,
   getReclamacoes,
+  getTermos,
+  getTermosDiarios,
+  getTermosTurmas,
   getTurma,
   getTurmas,
   getTransferenciaPreview,
   getUsers,
   login,
+  recusarTermo,
   renovarSessao,
   responderReclamacao,
   transferirMatricula,
@@ -91,15 +98,20 @@ import {
   type CreateMatriculaInput,
   type CreateMatrizInput,
   type CreateProfessorInput,
+  type CreateTermoIndividualInput,
+  type CreateTermoTurmaInput,
   type CreateTurmaInput,
   type DashboardPeriodQuery,
   type EmitirDocumentoInput,
   type FecharSemestreInput,
+  type ListTermosQuery,
   type LoginInput,
   type MeProfile,
   type Parametrizacoes,
   type PortalContexto,
   type ProfessorDashboard,
+  type TermoAbertura,
+  type TermoTurmaDisponivel,
   type StatusFatura,
   type StatusMatricula,
   type TransferenciaInternaInput,
@@ -494,3 +506,42 @@ export const useUpdateParametrizacoes = () =>
   useMutation({
     mutationFn: (data: UpdateParametrizacoesInput) => updateParametrizacoes(data),
   });
+
+export const getGetTermosQueryKey = (query?: ListTermosQuery) => ["/api/v1/termos", query] as const;
+export const useGetTermos = (options?: {query?: ListTermosQuery; initialData?: TermoAbertura[]}) =>
+  useQuery({
+    queryKey: getGetTermosQueryKey(options?.query),
+    queryFn: () => getTermos(options?.query),
+    initialData: options?.initialData,
+  });
+
+export const getGetTermosTurmasQueryKey = (query?: {anoLetivo?: number; semestreLetivo?: number}) =>
+  ["/api/v1/termos/turmas", query] as const;
+export const useGetTermosTurmas = (options: {
+  query: {anoLetivo?: number; semestreLetivo?: number};
+  initialData?: TermoTurmaDisponivel[];
+}) =>
+  useQuery({
+    queryKey: getGetTermosTurmasQueryKey(options.query),
+    queryFn: () => getTermosTurmas(options.query),
+    initialData: options.initialData,
+  });
+
+export const getGetTermosDiariosQueryKey = (q: string) => ["/api/v1/termos/diarios", q] as const;
+export const useGetTermosDiarios = (q: string) =>
+  useQuery({
+    queryKey: getGetTermosDiariosQueryKey(q),
+    queryFn: () => getTermosDiarios({q}),
+    enabled: q.trim().length >= 2,
+  });
+
+export const useCreateTermosTurma = () =>
+  useMutation({
+    mutationFn: (data: CreateTermoTurmaInput) => createTermosTurma(data),
+  });
+export const useCreateTermoIndividual = () =>
+  useMutation({
+    mutationFn: (data: CreateTermoIndividualInput) => createTermoIndividual(data),
+  });
+export const useAprovarTermo = () => useMutation({mutationFn: aprovarTermo});
+export const useRecusarTermo = () => useMutation({mutationFn: recusarTermo});

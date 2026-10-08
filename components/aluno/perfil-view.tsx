@@ -9,6 +9,7 @@ import {z} from "zod";
 
 import {AlunoPageHeader} from "@/components/aluno/aluno-page-header";
 import {Badge} from "@/components/ui/badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
@@ -238,7 +239,7 @@ export const PerfilView = ({initialData}: PerfilViewProps) => {
                 )}
               />
               <Button className="mt-2 h-auto w-full py-2.5 text-xs font-bold" disabled={isPending} type="submit">
-                Salvar Nova Senha
+                <PendingButtonLabel isPending={isPending} label="Salvar Nova Senha" pendingLabel="Salvando..." />
               </Button>
             </form>
           </Form>

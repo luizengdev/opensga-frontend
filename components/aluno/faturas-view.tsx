@@ -7,6 +7,7 @@ import {AlunoEmptyState} from "@/components/aluno/aluno-empty-state";
 import {AlunoPageHeader} from "@/components/aluno/aluno-page-header";
 import {AlunoStatusBadge} from "@/components/aluno/aluno-status-badge";
 import {DocumentViewerDialog} from "@/components/aluno/document-viewer-dialog";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {formatCompetenciaBr, formatCurrencyBrl, formatDateBr} from "@/lib/admin/format";
@@ -73,8 +74,12 @@ export const FaturasView = ({initialData}: FaturasViewProps) => {
             onClick={() => emitir({tipo: "QUITACAO_FINANCEIRA", alunoId})}
             variant="outline"
           >
-            <Receipt className="size-4" />
-            {isPending ? "Emitindo…" : "Declaração de Quitação Anual"}
+            <PendingButtonLabel
+              icon={<Receipt className="size-4" />}
+              isPending={isPending}
+              label="Declaração de Quitação Anual"
+              pendingLabel="Emitindo…"
+            />
           </Button>
         }
         description="Consulta de vencimentos, histórico de quitações e emissão de comprovantes."
@@ -232,7 +237,12 @@ export const FaturasView = ({initialData}: FaturasViewProps) => {
                         onClick={() => emitir({tipo: "QUITACAO_FINANCEIRA", alunoId})}
                         variant="link"
                       >
-                        <FileText className="size-3.5" /> Recibo
+                        <PendingButtonLabel
+                          icon={<FileText className="size-3.5" />}
+                          isPending={isPending}
+                          label="Recibo"
+                          pendingLabel="Emitindo…"
+                        />
                       </Button>
                     ) : fatura.valor <= 0 ? (
                       <span className="text-xs font-medium text-muted-foreground">Isento / R$ 0</span>

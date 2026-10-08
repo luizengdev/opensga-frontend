@@ -43,7 +43,7 @@ alwaysApply: true
 
 ## Painel administrativo — navegação
 
-- Nav em `lib/admin/nav.ts`. **Matrículas & RA** é item colapsável (`AdminNavItem.children`): Alterar Situação → `/area-admin/matriculas`; Consulta Acadêmica → `/area-admin/consulta-academica`.
+- Nav em `lib/admin/nav.ts`. **Matrículas & RA** é item colapsável (`AdminNavItem.children`): Alterar Situação → `/area-admin/matriculas`; Consulta Acadêmica → `/area-admin/consulta-academica`. Professor: **Termo de Abertura** abaixo de Minhas Turmas → `/area-admin/termo-abertura`. Admin: **Aprovação de Termo** abaixo de Turmas Semestrais → `/area-admin/aprovacao-termos`.
 - Largura da sidebar: `--admin-sidebar-width` (padrão `16rem` / 256px) em `:root`. Arraste a borda direita (`AdminSidebarResizeHandle`); faixa 224–420px; persistir em `localStorage` (`opensga.admin-sidebar-width`). Clique duplo restaura o padrão. O conteúdo usa `md:pl-[var(--admin-sidebar-width)]`.
 
 ## Autenticação com FastifyJWT

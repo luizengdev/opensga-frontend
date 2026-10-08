@@ -19,6 +19,8 @@ import type {
   CreateMatriculaResponse,
   CreateMatrizInput,
   CreateProfessorInput,
+  CreateTermoIndividualInput,
+  CreateTermoTurmaInput,
   CreateTurmaInput,
   Curso,
   DashboardPeriodQuery,
@@ -52,6 +54,10 @@ import type {
   UpdateProfessorInput,
   UpdateUserInput,
   User,
+  ListTermosQuery,
+  TermoAbertura,
+  TermoDiarioResumo,
+  TermoTurmaDisponivel,
 } from "./types";
 
 export * from "./types";
@@ -265,3 +271,24 @@ export const updateParametrizacoes = async (data: UpdateParametrizacoesInput) =>
     method: "PATCH",
     body: JSON.stringify(data),
   });
+
+export const getTermos = async (query?: ListTermosQuery) =>
+  requestApi<TermoAbertura[]>(`/api/v1/termos${toQueryString(query)}`);
+export const getTermosTurmas = async (query?: {anoLetivo?: number; semestreLetivo?: number}) =>
+  requestApi<TermoTurmaDisponivel[]>(`/api/v1/termos/turmas${toQueryString(query)}`);
+export const getTermosDiarios = async (query: {q: string}) =>
+  requestApi<TermoDiarioResumo[]>(`/api/v1/termos/diarios${toQueryString(query)}`);
+export const createTermosTurma = async (data: CreateTermoTurmaInput) =>
+  requestApi<TermoAbertura[]>("/api/v1/termos/turma", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+export const createTermoIndividual = async (data: CreateTermoIndividualInput) =>
+  requestApi<TermoAbertura>("/api/v1/termos/individual", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+export const aprovarTermo = async (id: string) =>
+  requestApi<TermoAbertura>(`/api/v1/termos/${id}/aprovar`, {method: "PATCH"});
+export const recusarTermo = async (id: string) =>
+  requestApi<TermoAbertura>(`/api/v1/termos/${id}/recusar`, {method: "PATCH"});

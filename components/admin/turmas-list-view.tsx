@@ -16,6 +16,7 @@ import {AdminSelect} from "@/components/admin/admin-select";
 import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {ConflictDialog} from "@/components/admin/conflict-dialog";
 import {Badge} from "@/components/ui/badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -669,7 +670,7 @@ export const TurmasListView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isCreating} type="submit">
-                  Ofertar
+                  <PendingButtonLabel isPending={isCreating} label="Ofertar" pendingLabel="Ofertando..." />
                 </Button>
               </DialogFooter>
             </form>

@@ -14,6 +14,7 @@ import {AdminSelect} from "@/components/admin/admin-select";
 import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {ConfirmDialog} from "@/components/admin/confirm-dialog";
 import {Badge} from "@/components/ui/badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {
@@ -379,7 +380,11 @@ export const PrecosView = ({initialCursos, initialPrecos}: PrecosViewProps) => {
                   Cancelar
                 </Button>
                 <Button disabled={isCreating} type="submit">
-                  Confirmar e sincronizar
+                  <PendingButtonLabel
+                    isPending={isCreating}
+                    label="Confirmar e sincronizar"
+                    pendingLabel="Sincronizando..."
+                  />
                 </Button>
               </DialogFooter>
             </form>
@@ -450,7 +455,7 @@ export const PrecosView = ({initialCursos, initialPrecos}: PrecosViewProps) => {
                   Cancelar
                 </Button>
                 <Button disabled={isUpdating} type="submit">
-                  Salvar alterações
+                  <PendingButtonLabel isPending={isUpdating} label="Salvar alterações" pendingLabel="Salvando..." />
                 </Button>
               </DialogFooter>
             </form>

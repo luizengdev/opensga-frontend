@@ -20,6 +20,7 @@ const adminNavGroups: AdminNavGroup[] = [
     group: "Acadêmico & Regulação",
     items: [
       {label: "Turmas Semestrais", href: "/area-admin/turmas"},
+      {label: "Aprovação de Termo", href: "/area-admin/aprovacao-termos"},
       {label: "Matrizes & Auditoria MEC", href: "/area-admin/matrizes"},
       {label: "Disciplinas Globais", href: "/area-admin/disciplinas"},
       {label: "Cursos Ofertados", href: "/area-admin/cursos"},
@@ -65,6 +66,7 @@ const professorNavGroups: AdminNavGroup[] = [
     items: [
       {label: "Meu Dashboard", href: "/area-admin/dashboard"},
       {label: "Minhas Turmas", href: "/area-admin/turmas"},
+      {label: "Termo de Abertura", href: "/area-admin/termo-abertura"},
       {label: "Comunicados", href: "/area-admin/comunicados"},
     ],
   },
@@ -85,6 +87,10 @@ export const getAdminBreadcrumb = (pathname: string, role: SessionRole) => {
   switch (section) {
     case "turmas":
       return parts[2] ? `Turmas / ${parts[2]}` : "Turmas Semestrais";
+    case "termo-abertura":
+      return "Termo de Abertura";
+    case "aprovacao-termos":
+      return "Aprovação de Termo";
     case "diario":
       return parts[2] ? `Diário Eletrônico / ${parts[2]}` : "Diário de Classe";
     case "matriculas":

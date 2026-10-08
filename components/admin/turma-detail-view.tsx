@@ -26,6 +26,7 @@ import {AdminSelect} from "@/components/admin/admin-select";
 import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {ConfirmDialog} from "@/components/admin/confirm-dialog";
 import {ConflictDialog} from "@/components/admin/conflict-dialog";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {
@@ -557,7 +558,7 @@ export const TurmaDetailView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isEnturmando} type="submit">
-                  Efetivar Enturmação
+                  <PendingButtonLabel isPending={isEnturmando} label="Efetivar Enturmação" pendingLabel="Enturmando..." />
                 </Button>
               </DialogFooter>
             </form>
@@ -662,7 +663,7 @@ export const TurmaDetailView = ({
                     </FormItem>
                   )}
                 />
-                <div className="flex flex-col justify-center rounded-[calc(var(--radius)-4px)] border border-border bg-muted/60 p-2.5 text-xs">
+                <div className="flex min-w-0 flex-col justify-center rounded-[calc(var(--radius)-4px)] border border-border bg-muted/60 p-2.5 text-xs">
                   <span className="block text-[11px] font-semibold text-foreground">
                     Cálculo em Tempo Real:
                   </span>
@@ -674,7 +675,7 @@ export const TurmaDetailView = ({
                       MF: <strong>{preview.mf}</strong>
                     </span>
                   </div>
-                  <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                  <span className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
                     {preview.status}
                   </span>
                 </div>
@@ -684,8 +685,12 @@ export const TurmaDetailView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isAvaliando} type="submit">
-                  <Save />
-                  Consolidar Lançamento
+                  <PendingButtonLabel
+                    icon={<Save />}
+                    isPending={isAvaliando}
+                    label="Consolidar Lançamento"
+                    pendingLabel="Salvando..."
+                  />
                 </Button>
               </DialogFooter>
             </form>

@@ -16,6 +16,7 @@ import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {ConfirmDialog} from "@/components/admin/confirm-dialog";
 import {ConflictDialog} from "@/components/admin/conflict-dialog";
 import {Badge} from "@/components/ui/badge";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -685,7 +686,11 @@ export const UsuariosView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isCreatingAdmin || isCreatingProfessor} type="submit">
-                  Cadastrar
+                  <PendingButtonLabel
+                    isPending={isCreatingAdmin || isCreatingProfessor}
+                    label="Cadastrar"
+                    pendingLabel="Cadastrando..."
+                  />
                 </Button>
               </DialogFooter>
             </form>
@@ -863,7 +868,11 @@ export const UsuariosView = ({
                   Cancelar
                 </Button>
                 <Button disabled={isUpdating || isUpdatingProfessor} type="submit">
-                  Salvar alterações
+                  <PendingButtonLabel
+                    isPending={isUpdating || isUpdatingProfessor}
+                    label="Salvar alterações"
+                    pendingLabel="Salvando..."
+                  />
                 </Button>
               </DialogFooter>
             </form>

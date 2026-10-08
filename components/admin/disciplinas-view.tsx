@@ -13,6 +13,7 @@ import {AdminPageHeader} from "@/components/admin/admin-page-header";
 import {AdminSearchField} from "@/components/admin/admin-search-field";
 import {AdminTablePagination} from "@/components/admin/admin-table-pagination";
 import {CargaCurricularFields} from "@/components/admin/carga-curricular-fields";
+import {PendingButtonLabel} from "@/components/pending-button-label";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {
@@ -343,7 +344,11 @@ export const DisciplinasView = ({initialDisciplinas}: DisciplinasViewProps) => {
                   Cancelar
                 </Button>
                 <Button disabled={isCreating || isUpdating} type="submit">
-                  {editing ? "Salvar" : "Cadastrar"}
+                  <PendingButtonLabel
+                    isPending={isCreating || isUpdating}
+                    label={editing ? "Salvar" : "Cadastrar"}
+                    pendingLabel={editing ? "Salvando..." : "Cadastrando..."}
+                  />
                 </Button>
               </DialogFooter>
             </form>
