@@ -61,3 +61,64 @@ export const formatNota = (nota: number | null) => {
 
   return nota.toFixed(1).replace(".", ",");
 };
+
+export const disciplinasDoPeriodoLetivo = (
+  disciplinas: PortalDisciplina[],
+  periodo: {anoLetivo: number; semestreLetivo: number},
+) => {
+  return disciplinas.filter(
+    (disciplina) =>
+      disciplina.anoLetivo === periodo.anoLetivo &&
+      disciplina.semestreLetivo === periodo.semestreLetivo,
+  );
+};
+
+export const calcularBoletimDisciplina = ({
+  disciplina,
+  limiteFaltasPercentual,
+}: {
+  disciplina: PortalDisciplina;
+  limiteFaltasPercentual: number;
+}) => {
+  const limiteFaltas = limiteFaltasDaDisciplina(disciplina.chTotal, limiteFaltasPercentual);
+  const frequencia = frequenciaPercentual({
+    totalFaltas: disciplina.totalFaltas,
+    chTotal: disciplina.chTotal,
+  });
+  const rf = isRfPorFalta({
+    totalFaltas: disciplina.totalFaltas,
+    chTotal: disciplina.chTotal,
+    limiteFaltasPercentual,
+  });
+
+  return {
+    limiteFaltas,
+    frequencia,
+    rf,
+    ns: notaSemestralVisivel(disciplina),
+    habilitaAv3: disciplina.habilitaAv3,
+    status: disciplina.statusDisciplina,
+    emRisco: isRiscoRf({
+      totalFaltas: disciplina.totalFaltas,
+      chTotal: disciplina.chTotal,
+      limiteFaltasPercentual,
+    }),
+  };
+};
+
+export const mediaFinalDoComponente = (
+  componente: {
+    notaFinal: number | null;
+    statusDisciplina: PortalDisciplina["statusDisciplina"] | null;
+  },
+) => {
+  if (componente.notaFinal !== null) {
+    return formatNota(componente.notaFinal);
+  }
+
+  if (componente.statusDisciplina === "EM_ABERTO") {
+    return "Em andamento";
+  }
+
+  return "A cursar";
+};

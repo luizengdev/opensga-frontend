@@ -11,6 +11,10 @@ export const formatDateBr = (value: string) => {
   return dayjs(value).format("DD/MM/YYYY");
 };
 
+export const formatCompetenciaBr = (value: string) => {
+  return dayjs(value).format("MM/YYYY");
+};
+
 export const formatDateTimeBr = (value: string) => {
   return dayjs(value).format("DD/MM/YYYY [às] HH:mm");
 };

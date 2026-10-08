@@ -1,6 +1,15 @@
 "use client";
 
-import {CreditCard, FileText, GraduationCap, QrCode, ShieldCheck, type LucideIcon} from "lucide-react";
+import {
+  CheckCircle2,
+  CreditCard,
+  Download,
+  FileText,
+  GraduationCap,
+  QrCode,
+  ShieldCheck,
+  type LucideIcon,
+} from "lucide-react";
 
 import {AlunoEmptyState} from "@/components/aluno/aluno-empty-state";
 import {AlunoPageHeader} from "@/components/aluno/aluno-page-header";
@@ -23,6 +32,13 @@ const ICONES: Record<TipoDocumento, LucideIcon> = {
   CARTEIRINHA_ESTUDANTIL: QrCode,
 };
 
+const TEMPO_EMISSAO: Record<TipoDocumento, string> = {
+  DECLARACAO_MATRICULA: "Emissão instantânea com hash autenticador",
+  HISTORICO_PARCIAL: "Assinatura digitalizada da Secretaria Geral",
+  QUITACAO_FINANCEIRA: "Validação bancária automática",
+  CARTEIRINHA_ESTUDANTIL: "Padrão nacional do estudante",
+};
+
 export const DocumentosView = ({initialCatalogo, initialData}: DocumentosViewProps) => {
   const {alunoId, contexto} = usePortalAluno(initialData);
   const {data: catalogo} = useGetPortalDocumentos({initialData: initialCatalogo});
@@ -33,15 +49,17 @@ export const DocumentosView = ({initialCatalogo, initialData}: DocumentosViewPro
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       <AlunoPageHeader
-        description="Certidões geradas a partir do texto da Secretaria e do seu vínculo no OpenSGA, com código de autenticação interno."
-        eyebrow="SECRETARIA DIGITAL · AUTOATENDIMENTO"
-        title="Emissão de documentos oficiais"
+        actions={
+          <div className="flex items-center gap-1.5 rounded-lg border border-success/25 bg-success/10 px-3 py-1.5 text-xs font-bold text-success-foreground">
+            <ShieldCheck className="size-4 text-success" />
+            <span>Válido sem necessidade de carimbo físico</span>
+          </div>
+        }
+        description="Certidões e comprovantes gerados eletronicamente com autenticidade verificável."
+        eyebrow="SECRETARIA DIGITAL · AUTOATENDIMENTO DISCENTE"
+        title="Emissão de Documentos Oficiais"
       />
-      <div className="flex items-center gap-2 rounded-xl border border-success/25 bg-success/10 px-4 py-3 text-xs font-semibold text-success-foreground">
-        <ShieldCheck className="size-4" />
-        Só entram no catálogo os modelos liberados pela Secretaria. Declaração e carteirinha exigem matrícula
-        ativa; a quitação é bloqueada se houver fatura atrasada.
-      </div>
+
       {lista.length === 0 ? (
         <AlunoEmptyState
           description="A Secretaria desativou a emissão no autoatendimento. Procure o registro acadêmico se precisar de uma certidão."
@@ -55,26 +73,57 @@ export const DocumentosView = ({initialCatalogo, initialData}: DocumentosViewPro
 
             return (
               <div
-                className="flex flex-col justify-between space-y-4 rounded-xl border border-border bg-card p-6 shadow-xs transition-all hover:border-primary/40"
+                className="flex flex-col justify-between space-y-5 rounded-xl border border-border bg-card p-6 shadow-xs transition-all hover:border-primary/40"
                 key={item.id}
               >
                 <div className="space-y-2">
-                  <Icon className="size-5 text-foreground" />
-                  <h3 className="font-heading text-base font-bold text-foreground">{item.titulo}</h3>
-                  <p className="text-xs font-medium text-muted-foreground">{item.descricao}</p>
-                  <p className="text-[11px] font-semibold text-muted-foreground">Finalidade: {item.finalidade}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-muted text-foreground">
+                      <Icon className="size-5" />
+                    </div>
+                    <span className="font-mono text-xs font-bold text-muted-foreground">
+                      Gratuito · 100% Digital
+                    </span>
+                  </div>
+                  <h3 className="font-heading text-lg font-bold text-foreground">{item.titulo}</h3>
+                  <p className="text-xs leading-relaxed font-medium text-muted-foreground">{item.descricao}</p>
+                  <div className="space-y-1 pt-2 text-xs font-medium text-muted-foreground">
+                    <p>
+                      <span className="font-bold text-foreground">Usos comuns:</span> {item.finalidade}
+                    </p>
+                  </div>
                 </div>
-                <Button
-                  disabled={!temMatricula || isPending}
-                  onClick={() => emitir({tipo: item.tipo, alunoId})}
-                >
-                  {tipoPendente === item.tipo ? "Emitindo…" : "Emitir agora"}
-                </Button>
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+                  <span className="flex items-center gap-1 font-mono text-xs font-bold text-muted-foreground">
+                    <CheckCircle2 className="size-4 text-success" />
+                    {TEMPO_EMISSAO[item.tipo]}
+                  </span>
+                  <Button
+                    className="shrink-0 text-xs font-bold"
+                    disabled={!temMatricula || isPending}
+                    onClick={() => emitir({tipo: item.tipo, alunoId})}
+                    size="sm"
+                  >
+                    <Download className="size-3.5" />
+                    {tipoPendente === item.tipo ? "Emitindo…" : "Visualizar & Baixar"}
+                  </Button>
+                </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/60 p-4 text-xs leading-relaxed font-medium text-muted-foreground">
+        <ShieldCheck className="mt-0.5 size-5 shrink-0 text-foreground" />
+        <div>
+          <strong className="mb-0.5 block font-bold text-foreground">Base Legal de Autenticidade Digital</strong>
+          Os documentos emitidos pelo Portal do Aluno OpenSGA possuem código de autenticação interno gerado na
+          emissão. Só entram no catálogo os modelos liberados pela Secretaria. Declaração e carteirinha exigem
+          matrícula ativa; a quitação é bloqueada se houver fatura atrasada.
+        </div>
+      </div>
+
       <DocumentViewerDialog documento={documento} onClose={fechar} />
     </div>
   );
