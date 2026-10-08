@@ -663,7 +663,7 @@ export const TurmaDetailView = ({
                     </FormItem>
                   )}
                 />
-                <div className="flex flex-col justify-center rounded-[calc(var(--radius)-4px)] border border-border bg-muted/60 p-2.5 text-xs">
+                <div className="flex min-w-0 flex-col justify-center rounded-[calc(var(--radius)-4px)] border border-border bg-muted/60 p-2.5 text-xs">
                   <span className="block text-[11px] font-semibold text-foreground">
                     Cálculo em Tempo Real:
                   </span>
@@ -675,7 +675,7 @@ export const TurmaDetailView = ({
                       MF: <strong>{preview.mf}</strong>
                     </span>
                   </div>
-                  <span className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                  <span className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
                     {preview.status}
                   </span>
                 </div>
