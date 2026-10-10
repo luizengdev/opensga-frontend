@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "npm run build && playwright test",
+    "test:e2e:ui": "npm run build && playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:headed": "npm run build && playwright test --headed",
+    "test:e2e:dev": "PLAYWRIGHT_WEB_SERVER=dev playwright test"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -29,10 +34,12 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "allure-playwright": "^3.13.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "eslint-plugin-simple-import-sort": "^14.0.0",

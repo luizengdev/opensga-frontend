@@ -11,8 +11,11 @@ Do vestibular à formatura: a secretaria opera o currículo, o professor lança 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Base-000000)](https://ui.shadcn.com/)
+[![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
 
-[O produto](#o-produto) · [Portal do aluno](#portal-do-aluno-e-do-responsável) · [Regras acadêmicas](#regras-acadêmicas-que-o-produto-já-aplica) · [Demo](#como-ver-funcionando) · [Engenharia](#engenharia)
+[O produto](#o-produto) · [Portal do aluno](#portal-do-aluno-e-do-responsável) · [Regras acadêmicas](#regras-acadêmicas-que-o-produto-já-aplica) · [Demo](#como-ver-funcionando) · [Engenharia](#engenharia) · [Testes E2E](#testes-e2e-playwright)
+
+**Demo em produção:** [opensga-frontend.vercel.app](https://opensga-frontend.vercel.app)
 
 </div>
 
@@ -141,6 +144,55 @@ npm run dev
 Variáveis em [`.env-example`](./.env-example). Sem `.env`, o app usa `http://localhost:3333`.
 
 Na secretaria, **Matrículas & RA** agrupa Alterar Situação e Consulta Acadêmica (busca por RA, nome ou CPF). A sidebar admin tem largura arrastável.
+
+---
+
+## Testes E2E (Playwright)
+
+A suíte em `e2e/` cobre os cenários **P0** do [documento de QA](https://github.com/luizengdev/opensga-api/blob/develop/docs/qa-arquitetura-testes.md) (IDs `QA-*`): login unificado, RBAC do professor, dashboards, turmas/diário, lançamento AV/AVS/AV3, fechamento, enturmação, auditoria MEC e jornada ponta a ponta.
+
+Os testes sobem um **mock HTTP** da API (`e2e/mocks/mock-api-server.mjs` na porta `3334`) e o Next em `http://localhost:3000` — não dependem da API real nem do Postgres. Locators semânticos (role/texto), Page Objects em `e2e/pages/`, fixtures em `e2e/fixtures/`, reporter **Allure** e workflow GitHub Actions com sharding.
+
+### Rodar localmente
+
+Na primeira vez, instale o Chromium do Playwright:
+
+```bash
+npx playwright install chromium
+```
+
+```bash
+# Suite completa (build + testes; CI=true evita reutilizar servidor já aberto)
+CI=true npm run test:e2e
+
+# Sem rebuild (já existe .next/)
+CI=true npx playwright test --reporter=list --retries=0
+
+# UI Mode / headed / contra next dev
+npm run test:e2e:ui
+npm run test:e2e:headed
+npm run test:e2e:dev
+```
+
+Se as portas `3000` ou `3334` estiverem ocupadas: `fuser -k 3000/tcp 3334/tcp`.
+
+### Relatórios
+
+```bash
+# HTML do Playwright
+npm run test:e2e:report
+
+# Allure (após uma run que gerou allure-results/)
+npx allure generate allure-results --clean -o allure-report
+npx allure open allure-report
+# ou: npx allure serve allure-results
+```
+
+<!-- Cole aqui prints ou GIFs da suíte verde, do HTML report e do Allure -->
+
+### CI
+
+O workflow [`.github/workflows/e2e.yml`](./.github/workflows/e2e.yml) roda em push/PR: `npm ci` → build → Playwright em **2 shards** → upload de `playwright-report/`, `test-results/` e `allure-results/` como artifacts.
 
 ---
 
