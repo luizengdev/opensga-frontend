@@ -34,14 +34,14 @@ type Fixtures = {
 };
 
 export const test = base.extend<Fixtures>({
-  loginAdminPage: async ({page}, use) => {
-    await use(new LoginAdminPage(page));
+  loginAdminPage: async ({page}, provide) => {
+    await provide(new LoginAdminPage(page));
   },
-  dashboardAdminPage: async ({page}, use) => {
-    await use(new DashboardAdminPage(page));
+  dashboardAdminPage: async ({page}, provide) => {
+    await provide(new DashboardAdminPage(page));
   },
-  turmaDetailPage: async ({page}, use) => {
-    await use(new TurmaDetailPage(page));
+  turmaDetailPage: async ({page}, provide) => {
+    await provide(new TurmaDetailPage(page));
   },
 });
 
