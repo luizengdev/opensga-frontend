@@ -1,12 +1,23 @@
 import type {TestInfo} from "@playwright/test";
+import * as allure from "allure-js-commons/sync";
+
+type Severity = "blocker" | "critical" | "normal" | "minor" | "trivial";
 
 export const annotate = (
   testInfo: TestInfo,
-  labels: {epic: string; feature: string; severity?: string},
+  labels: {
+    epic: string;
+    feature: string;
+    severity?: Severity;
+    tags?: string[];
+  },
 ) => {
-  testInfo.annotations.push(
-    {type: "epic", description: labels.epic},
-    {type: "feature", description: labels.feature},
-    {type: "severity", description: labels.severity ?? "critical"},
-  );
+  const severity = labels.severity ?? "critical";
+  const qaId = testInfo.title.match(/QA-[A-Z0-9-]+/)?.[0];
+  const tags = ["p0", ...(qaId ? [qaId] : []), ...(labels.tags ?? [])];
+
+  allure.epic(labels.epic);
+  allure.feature(labels.feature);
+  allure.severity(severity);
+  allure.tags(...tags);
 };
