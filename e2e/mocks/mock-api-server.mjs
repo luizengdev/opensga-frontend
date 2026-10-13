@@ -87,6 +87,23 @@ const alunoUser = {
   avatarUrl: null,
 };
 
+const documentosCatalogo = [
+  {
+    id: "00000000-0000-4000-8000-0000000000doc1",
+    tipo: "DECLARACAO_MATRICULA",
+    titulo: "Declaração de Matrícula",
+    descricao: "Comprova vínculo acadêmico ativo no período letivo corrente.",
+    finalidade: "Estágio, transporte e órgãos públicos",
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000000doc2",
+    tipo: "CARTEIRINHA_ESTUDANTIL",
+    titulo: "Carteirinha Estudantil",
+    descricao: "Identidade acadêmica digital para meia-entrada e acesso campus.",
+    finalidade: "Meia-entrada e identificação institucional",
+  },
+];
+
 const parametrizacoes = {
   id: "00000000-0000-4000-8000-000000000099",
   nomeIes: "OpenSGA E2E",
@@ -793,18 +810,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (method === "GET" && path === "/api/v1/portal/contexto") {
+    if (role !== "ALUNO" && role !== "RESPONSAVEL") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+
     const d = diarioPrincipal();
     return json(res, 200, {
-      aluno: {
-        id: "00000000-0000-4000-8000-0000000000al",
-        ra: "2026000001",
-        nome: alunoUser.nome,
-        email: alunoUser.email,
-        cpf: alunoUser.cpf,
-        telefone: null,
-        dataNascimento: "2000-01-01",
-        avatarUrl: null,
-      },
+      profile: meForRole("ALUNO"),
+      alunoId: "00000000-0000-4000-8000-0000000000al",
       matricula: {
         id: IDS.matricula,
         ra: "2026000001",
@@ -854,6 +867,89 @@ const server = http.createServer(async (req, res) => {
       faturas: [],
       comunicados: [],
       ouvidoria: [],
+    });
+  }
+
+  if (method === "GET" && path === "/api/v1/portal/documentos") {
+    if (role !== "ALUNO" && role !== "RESPONSAVEL") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+
+    return json(res, 200, documentosCatalogo);
+  }
+
+  if (method === "POST" && path === "/api/v1/portal/documentos/emitir") {
+    if (role !== "ALUNO" && role !== "RESPONSAVEL") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+
+    const body = await readBody(req);
+    const modelo = documentosCatalogo.find((item) => item.tipo === body.tipo);
+    if (!modelo) {
+      return json(res, 404, {error: "Modelo de documento não encontrado"});
+    }
+
+    const d = diarioPrincipal();
+    const codigoAutenticacao = `AUT-E2E-${Date.now().toString(36).toUpperCase()}`;
+
+    return json(res, 200, {
+      tipo: modelo.tipo,
+      titulo: modelo.titulo,
+      corpo: `Declaramos para os devidos fins que ${alunoUser.nome}, RA 2026000001, é aluno(a) regularmente matriculado(a) no curso de ${curso.nome}. Código ${codigoAutenticacao}.`,
+      codigoAutenticacao,
+      emitidoEm: new Date().toISOString(),
+      aluno: {
+        nome: alunoUser.nome,
+        cpf: alunoUser.cpf,
+        ra: "2026000001",
+        avatarUrl: null,
+      },
+      curso: {
+        nome: curso.nome,
+        modalidade: "PRESENCIAL",
+        campusNome: campus.nome,
+        codigoPolo: campus.codigoPolo,
+      },
+      periodoAtual: 1,
+      semestreIngresso: "2026.1",
+      chIntegralizada: d.chCumprida,
+      chTotalCurso: 140,
+      disciplinas: [
+        {
+          codigo: disciplina.codigo,
+          nome: disciplina.nome,
+          chTotal: disciplina.chTotal,
+          tipoEntrega: disciplina.tipoEntrega,
+        },
+      ],
+      matriz: [
+        {
+          semestreIdeal: 1,
+          codigo: disciplina.codigo,
+          nome: disciplina.nome,
+          tipo: disciplina.tipo,
+          chTotal: disciplina.chTotal,
+          notaFinal: null,
+          statusDisciplina: d.statusDisciplina,
+        },
+      ],
+    });
+  }
+
+  if (method === "POST" && path === "/api/v1/auth/renovar") {
+    const expMinutes = role === "ALUNO" || role === "RESPONSAVEL" ? 30 : 20;
+    return json(res, 200, {
+      token: encodeJwt({
+        sub: role === "ALUNO" ? alunoUser.id : role === "PROFESSOR" ? professorUser.id : adminUser.id,
+        role,
+        email:
+          role === "ALUNO"
+            ? alunoUser.email
+            : role === "PROFESSOR"
+              ? professorUser.email
+              : adminUser.email,
+        exp: Math.floor(Date.now() / 1000) + expMinutes * 60,
+      }),
     });
   }
 

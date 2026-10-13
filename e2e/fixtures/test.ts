@@ -4,6 +4,8 @@ import path from "node:path";
 
 import {DashboardAdminPage} from "../pages/dashboard-admin.page";
 import {LoginAdminPage} from "../pages/login-admin.page";
+import {LoginAlunoPage} from "../pages/login-aluno.page";
+import {PortalAlunoPage} from "../pages/portal-aluno.page";
 import {TurmaDetailPage} from "../pages/turma-detail.page";
 
 interface QuarantineFile {
@@ -29,6 +31,8 @@ export const MATRIZ_BAIXA_ID = "00000000-0000-4000-8000-0000000000m2";
 
 type Fixtures = {
   loginAdminPage: LoginAdminPage;
+  loginAlunoPage: LoginAlunoPage;
+  portalAlunoPage: PortalAlunoPage;
   dashboardAdminPage: DashboardAdminPage;
   turmaDetailPage: TurmaDetailPage;
 };
@@ -36,6 +40,12 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
   loginAdminPage: async ({page}, provide) => {
     await provide(new LoginAdminPage(page));
+  },
+  loginAlunoPage: async ({page}, provide) => {
+    await provide(new LoginAlunoPage(page));
+  },
+  portalAlunoPage: async ({page}, provide) => {
+    await provide(new PortalAlunoPage(page));
   },
   dashboardAdminPage: async ({page}, provide) => {
     await provide(new DashboardAdminPage(page));

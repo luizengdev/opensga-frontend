@@ -149,7 +149,7 @@ Na secretaria, **Matrículas & RA** agrupa Alterar Situação e Consulta Acadêm
 
 ## Testes E2E (Playwright)
 
-A suíte em `e2e/` cobre os cenários **P0** do [documento de QA](https://github.com/luizengdev/opensga-api/blob/develop/docs/qa-arquitetura-testes.md) (IDs `QA-*`): login unificado, RBAC do professor, dashboards, turmas/diário, lançamento AV/AVS/AV3, fechamento, enturmação, auditoria MEC e jornada ponta a ponta.
+A suíte em `e2e/` cobre os cenários **P0** do [documento de QA](https://github.com/luizengdev/opensga-api/blob/develop/docs/qa-arquitetura-testes.md) (IDs `QA-*`): login unificado, RBAC do professor, dashboards, turmas/diário, lançamento AV/AVS/AV3, fechamento, enturmação, auditoria MEC, jornada ponta a ponta e portal do aluno (`QA-PORTAL-*` / emissão de documentos).
 
 Os testes sobem um **mock HTTP** da API (`e2e/mocks/mock-api-server.mjs` na porta `3334`) e o Next em `http://localhost:3000` — não dependem da API real nem do Postgres. Locators semânticos (role/texto), Page Objects em `e2e/pages/`, fixtures em `e2e/fixtures/`, reporter **Allure** e workflow GitHub Actions com sharding.
 
