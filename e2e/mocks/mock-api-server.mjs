@@ -139,6 +139,22 @@ const curso = {
   duracaoSemestres: 8,
 };
 
+const catalogoOferta = {
+  cursoId: IDS.curso,
+  nome: curso.nome,
+  modalidade: "PRESENCIAL",
+  tipoGraduacao: "BACHARELADO",
+  duracaoSemestres: curso.duracaoSemestres,
+  campus: {
+    nome: campus.nome,
+    cidade: campus.cidade,
+    estado: campus.estado,
+  },
+  valor: 899,
+  moeda: "BRL",
+  intervalo: "month",
+};
+
 const disciplina = {
   id: IDS.disciplina,
   nome: "Cálculo I",
@@ -299,9 +315,9 @@ const IDS_EXTRA = {
   alunoUser2: "00000000-0000-4000-8000-0000000000u2",
 };
 
-const createMatricula = ({id, ra, nome, email, cpf}) => ({
+const createMatricula = ({id, ra, nome, email, cpf, status = "ATIVO"}) => ({
   id,
-  status: "ATIVO",
+  status,
   periodoAtual: 1,
   semestreIngresso: "2026.1",
   curso: {id: curso.id, nome: curso.nome, modalidade: "PRESENCIAL"},
@@ -341,7 +357,7 @@ const createDiario = ({id, matriculaId, ra, nome}) => ({
   aluno: {ra, nome},
 });
 
-let matriculas = [
+const seedMatriculas = () => [
   createMatricula({
     id: IDS.matricula,
     ra: "2026000001",
@@ -365,6 +381,9 @@ let matriculas = [
   }),
 ];
 
+let matriculas = seedMatriculas();
+let nextInscricaoRa = 100;
+
 let diarios = [
   createDiario({
     id: IDS.diario,
@@ -375,6 +394,8 @@ let diarios = [
 ];
 
 const resetState = () => {
+  matriculas = seedMatriculas();
+  nextInscricaoRa = 100;
   diarios = [
     createDiario({
       id: IDS.diario,
@@ -645,6 +666,53 @@ const server = http.createServer(async (req, res) => {
   if (method === "POST" && path === "/__e2e/reset") {
     resetState();
     return json(res, 200, {ok: true});
+  }
+
+  if (method === "GET" && (path === "/api/catalogo" || path === "/api/v1/catalogo")) {
+    return json(res, 200, [catalogoOferta]);
+  }
+
+  if (method === "POST" && (path === "/api/inscricao" || path === "/api/v1/inscricao")) {
+    const body = await readBody(req);
+    const {nome, email, cpf, dataNascimento, cursoModalidadeId} = body;
+
+    if (!nome || !email || !cpf || !dataNascimento || !cursoModalidadeId) {
+      return json(res, 400, {error: "Campos obrigatórios ausentes"});
+    }
+
+    if (cursoModalidadeId !== IDS.curso) {
+      return json(res, 404, {error: "Curso não encontrado"});
+    }
+
+    const raSuffix = String(nextInscricaoRa).padStart(6, "0");
+    const ra = `2026${raSuffix}`;
+    const matriculaId = `00000000-0000-4000-8000-00000000n${raSuffix.slice(-2)}`;
+    nextInscricaoRa += 1;
+    const senhaProvisoria = "Aluno@123456";
+
+    matriculas = [
+      ...matriculas,
+      createMatricula({
+        id: matriculaId,
+        ra,
+        nome,
+        email,
+        cpf,
+        status: "PRE_MATRICULADO",
+      }),
+    ];
+
+    return json(res, 200, {
+      url: null,
+      sessionId: null,
+      requiresCheckout: false,
+      status: "PRE_MATRICULADO",
+      acesso: {
+        email,
+        ra,
+        senhaProvisoria,
+      },
+    });
   }
 
   if (method === "GET" && path === "/api/v1/matriculas") {

@@ -1,4 +1,7 @@
+import {execSync} from "node:child_process";
 import {defineConfig, devices} from "@playwright/test";
+
+execSync("node e2e/mocks/warmup-ports.mjs", {stdio: "ignore"});
 
 const PORT = 3000;
 const BASE_URL = `http://localhost:${PORT}`;

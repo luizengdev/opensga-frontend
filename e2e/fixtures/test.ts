@@ -3,8 +3,10 @@ import {readFileSync} from "node:fs";
 import path from "node:path";
 
 import {DashboardAdminPage} from "../pages/dashboard-admin.page";
+import {InscricaoPage} from "../pages/inscricao.page";
 import {LoginAdminPage} from "../pages/login-admin.page";
 import {LoginAlunoPage} from "../pages/login-aluno.page";
+import {MatriculasAdminPage} from "../pages/matriculas-admin.page";
 import {PortalAlunoPage} from "../pages/portal-aluno.page";
 import {TurmaDetailPage} from "../pages/turma-detail.page";
 
@@ -35,6 +37,8 @@ type Fixtures = {
   portalAlunoPage: PortalAlunoPage;
   dashboardAdminPage: DashboardAdminPage;
   turmaDetailPage: TurmaDetailPage;
+  inscricaoPage: InscricaoPage;
+  matriculasAdminPage: MatriculasAdminPage;
 };
 
 export const test = base.extend<Fixtures>({
@@ -52,6 +56,12 @@ export const test = base.extend<Fixtures>({
   },
   turmaDetailPage: async ({page}, provide) => {
     await provide(new TurmaDetailPage(page));
+  },
+  inscricaoPage: async ({page}, provide) => {
+    await provide(new InscricaoPage(page));
+  },
+  matriculasAdminPage: async ({page}, provide) => {
+    await provide(new MatriculasAdminPage(page));
   },
 });
 
