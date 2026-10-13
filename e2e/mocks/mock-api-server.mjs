@@ -87,6 +87,23 @@ const alunoUser = {
   avatarUrl: null,
 };
 
+const documentosCatalogo = [
+  {
+    id: "00000000-0000-4000-8000-0000000000doc1",
+    tipo: "DECLARACAO_MATRICULA",
+    titulo: "Declaração de Matrícula",
+    descricao: "Comprova vínculo acadêmico ativo no período letivo corrente.",
+    finalidade: "Estágio, transporte e órgãos públicos",
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000000doc2",
+    tipo: "CARTEIRINHA_ESTUDANTIL",
+    titulo: "Carteirinha Estudantil",
+    descricao: "Identidade acadêmica digital para meia-entrada e acesso campus.",
+    finalidade: "Meia-entrada e identificação institucional",
+  },
+];
+
 const parametrizacoes = {
   id: "00000000-0000-4000-8000-000000000099",
   nomeIes: "OpenSGA E2E",
@@ -120,6 +137,22 @@ const curso = {
   codigoMec: "ESW-E2E",
   modalidade: "PRESENCIAL",
   duracaoSemestres: 8,
+};
+
+const catalogoOferta = {
+  cursoId: IDS.curso,
+  nome: curso.nome,
+  modalidade: "PRESENCIAL",
+  tipoGraduacao: "BACHARELADO",
+  duracaoSemestres: curso.duracaoSemestres,
+  campus: {
+    nome: campus.nome,
+    cidade: campus.cidade,
+    estado: campus.estado,
+  },
+  valor: 899,
+  moeda: "BRL",
+  intervalo: "month",
 };
 
 const disciplina = {
@@ -282,9 +315,9 @@ const IDS_EXTRA = {
   alunoUser2: "00000000-0000-4000-8000-0000000000u2",
 };
 
-const createMatricula = ({id, ra, nome, email, cpf}) => ({
+const createMatricula = ({id, ra, nome, email, cpf, status = "ATIVO"}) => ({
   id,
-  status: "ATIVO",
+  status,
   periodoAtual: 1,
   semestreIngresso: "2026.1",
   curso: {id: curso.id, nome: curso.nome, modalidade: "PRESENCIAL"},
@@ -324,7 +357,7 @@ const createDiario = ({id, matriculaId, ra, nome}) => ({
   aluno: {ra, nome},
 });
 
-let matriculas = [
+const seedMatriculas = () => [
   createMatricula({
     id: IDS.matricula,
     ra: "2026000001",
@@ -348,6 +381,9 @@ let matriculas = [
   }),
 ];
 
+let matriculas = seedMatriculas();
+let nextInscricaoRa = 100;
+
 let diarios = [
   createDiario({
     id: IDS.diario,
@@ -358,6 +394,8 @@ let diarios = [
 ];
 
 const resetState = () => {
+  matriculas = seedMatriculas();
+  nextInscricaoRa = 100;
   diarios = [
     createDiario({
       id: IDS.diario,
@@ -630,6 +668,53 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, {ok: true});
   }
 
+  if (method === "GET" && (path === "/api/catalogo" || path === "/api/v1/catalogo")) {
+    return json(res, 200, [catalogoOferta]);
+  }
+
+  if (method === "POST" && (path === "/api/inscricao" || path === "/api/v1/inscricao")) {
+    const body = await readBody(req);
+    const {nome, email, cpf, dataNascimento, cursoModalidadeId} = body;
+
+    if (!nome || !email || !cpf || !dataNascimento || !cursoModalidadeId) {
+      return json(res, 400, {error: "Campos obrigatórios ausentes"});
+    }
+
+    if (cursoModalidadeId !== IDS.curso) {
+      return json(res, 404, {error: "Curso não encontrado"});
+    }
+
+    const raSuffix = String(nextInscricaoRa).padStart(6, "0");
+    const ra = `2026${raSuffix}`;
+    const matriculaId = `00000000-0000-4000-8000-00000000n${raSuffix.slice(-2)}`;
+    nextInscricaoRa += 1;
+    const senhaProvisoria = "Aluno@123456";
+
+    matriculas = [
+      ...matriculas,
+      createMatricula({
+        id: matriculaId,
+        ra,
+        nome,
+        email,
+        cpf,
+        status: "PRE_MATRICULADO",
+      }),
+    ];
+
+    return json(res, 200, {
+      url: null,
+      sessionId: null,
+      requiresCheckout: false,
+      status: "PRE_MATRICULADO",
+      acesso: {
+        email,
+        ra,
+        senhaProvisoria,
+      },
+    });
+  }
+
   if (method === "GET" && path === "/api/v1/matriculas") {
     return json(res, 200, matriculas);
   }
@@ -793,18 +878,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (method === "GET" && path === "/api/v1/portal/contexto") {
+    if (role !== "ALUNO" && role !== "RESPONSAVEL") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+
     const d = diarioPrincipal();
     return json(res, 200, {
-      aluno: {
-        id: "00000000-0000-4000-8000-0000000000al",
-        ra: "2026000001",
-        nome: alunoUser.nome,
-        email: alunoUser.email,
-        cpf: alunoUser.cpf,
-        telefone: null,
-        dataNascimento: "2000-01-01",
-        avatarUrl: null,
-      },
+      profile: meForRole("ALUNO"),
+      alunoId: "00000000-0000-4000-8000-0000000000al",
       matricula: {
         id: IDS.matricula,
         ra: "2026000001",
@@ -854,6 +935,89 @@ const server = http.createServer(async (req, res) => {
       faturas: [],
       comunicados: [],
       ouvidoria: [],
+    });
+  }
+
+  if (method === "GET" && path === "/api/v1/portal/documentos") {
+    if (role !== "ALUNO" && role !== "RESPONSAVEL") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+
+    return json(res, 200, documentosCatalogo);
+  }
+
+  if (method === "POST" && path === "/api/v1/portal/documentos/emitir") {
+    if (role !== "ALUNO" && role !== "RESPONSAVEL") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+
+    const body = await readBody(req);
+    const modelo = documentosCatalogo.find((item) => item.tipo === body.tipo);
+    if (!modelo) {
+      return json(res, 404, {error: "Modelo de documento não encontrado"});
+    }
+
+    const d = diarioPrincipal();
+    const codigoAutenticacao = `AUT-E2E-${Date.now().toString(36).toUpperCase()}`;
+
+    return json(res, 200, {
+      tipo: modelo.tipo,
+      titulo: modelo.titulo,
+      corpo: `Declaramos para os devidos fins que ${alunoUser.nome}, RA 2026000001, é aluno(a) regularmente matriculado(a) no curso de ${curso.nome}. Código ${codigoAutenticacao}.`,
+      codigoAutenticacao,
+      emitidoEm: new Date().toISOString(),
+      aluno: {
+        nome: alunoUser.nome,
+        cpf: alunoUser.cpf,
+        ra: "2026000001",
+        avatarUrl: null,
+      },
+      curso: {
+        nome: curso.nome,
+        modalidade: "PRESENCIAL",
+        campusNome: campus.nome,
+        codigoPolo: campus.codigoPolo,
+      },
+      periodoAtual: 1,
+      semestreIngresso: "2026.1",
+      chIntegralizada: d.chCumprida,
+      chTotalCurso: 140,
+      disciplinas: [
+        {
+          codigo: disciplina.codigo,
+          nome: disciplina.nome,
+          chTotal: disciplina.chTotal,
+          tipoEntrega: disciplina.tipoEntrega,
+        },
+      ],
+      matriz: [
+        {
+          semestreIdeal: 1,
+          codigo: disciplina.codigo,
+          nome: disciplina.nome,
+          tipo: disciplina.tipo,
+          chTotal: disciplina.chTotal,
+          notaFinal: null,
+          statusDisciplina: d.statusDisciplina,
+        },
+      ],
+    });
+  }
+
+  if (method === "POST" && path === "/api/v1/auth/renovar") {
+    const expMinutes = role === "ALUNO" || role === "RESPONSAVEL" ? 30 : 20;
+    return json(res, 200, {
+      token: encodeJwt({
+        sub: role === "ALUNO" ? alunoUser.id : role === "PROFESSOR" ? professorUser.id : adminUser.id,
+        role,
+        email:
+          role === "ALUNO"
+            ? alunoUser.email
+            : role === "PROFESSOR"
+              ? professorUser.email
+              : adminUser.email,
+        exp: Math.floor(Date.now() / 1000) + expMinutes * 60,
+      }),
     });
   }
 

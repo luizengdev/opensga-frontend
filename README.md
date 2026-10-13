@@ -149,7 +149,7 @@ Na secretaria, **Matrículas & RA** agrupa Alterar Situação e Consulta Acadêm
 
 ## Testes E2E (Playwright)
 
-A suíte em `e2e/` cobre os cenários **P0** do [documento de QA](https://github.com/luizengdev/opensga-api/blob/develop/docs/qa-arquitetura-testes.md) (IDs `QA-*`): login unificado, RBAC do professor, dashboards, turmas/diário, lançamento AV/AVS/AV3, fechamento, enturmação, auditoria MEC e jornada ponta a ponta.
+A suíte em `e2e/` cobre os cenários **P0** do [documento de QA](https://github.com/luizengdev/opensga-api/blob/develop/docs/qa-arquitetura-testes.md) (IDs `QA-*`): login unificado, RBAC do professor, dashboards, turmas/diário, lançamento AV/AVS/AV3, fechamento, enturmação, auditoria MEC, jornada ponta a ponta, portal do aluno (`QA-PORTAL-*` / emissão de documentos) e inscrição pública isenta (`QA-FIN-INS-01`) com prova de matrícula `PRE_MATRICULADO` na secretaria.
 
 Os testes sobem um **mock HTTP** da API (`e2e/mocks/mock-api-server.mjs` na porta `3334`) e o Next em `http://localhost:3000` — não dependem da API real nem do Postgres. Locators semânticos (role/texto), Page Objects em `e2e/pages/`, fixtures em `e2e/fixtures/`, reporter **Allure** e workflow GitHub Actions com sharding.
 
@@ -175,6 +175,8 @@ npm run test:e2e:dev
 ```
 
 Se as portas `3000` ou `3334` estiverem ocupadas: `fuser -k 3000/tcp 3334/tcp`.
+
+No WSL, um `CI=true npx playwright test` sem saída por minutos costuma ser o health check em `127.0.0.1` (porta fechada dá timeout em vez de refused). O `playwright.config.ts` aquecido as portas ao carregar; se ainda travar, rode o `fuser` acima e use `--reporter=list`.
 
 ### Relatórios
 
