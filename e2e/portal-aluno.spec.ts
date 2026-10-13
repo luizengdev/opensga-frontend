@@ -1,7 +1,12 @@
 import {annotate} from "./helpers/annotations";
+import {resetMockApi} from "./helpers/reset-mock";
 import {expect, test} from "./fixtures/test";
 
 test.describe("Portal do aluno @p0", () => {
+  test.beforeEach(async () => {
+    await resetMockApi();
+  });
+
   test("QA-PORTAL-01: aluno acessa o próprio dashboard", async ({
     page,
     loginAlunoPage,
