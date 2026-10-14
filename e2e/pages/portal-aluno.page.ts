@@ -23,6 +23,14 @@ export class PortalAlunoPage {
     await this.page.goto("/area-aluno/documentos");
   }
 
+  async gotoFaturas() {
+    await this.page.goto("/area-aluno/faturas");
+  }
+
+  async gotoComunicados() {
+    await this.page.goto("/area-aluno/comunicados");
+  }
+
   welcomeHeading(firstName: string) {
     return this.page.getByRole("heading", {
       name: new RegExp(`^olá,\\s*${firstName}$`, "i"),
