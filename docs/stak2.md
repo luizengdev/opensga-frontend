@@ -159,6 +159,7 @@ Cenário: Inscrição isenta cria matrícula PRE_MATRICULADO visível na secreta
 ## 9. Referências
 
 - API: `docs/qa-arquitetura-testes.md` — seção financeira / `QA-FIN-INS-*`
+- Front E2E: `docs/e2e.md`
 - Front: `app/(public)/inscricao`, `components/public/inscricao-form.tsx`
 - Contrato: `createInscricao` → `POST /api/inscricao` (`lib/api/fetch-generated`)
 - Suíte existente: `e2e/portal-aluno.spec.ts`, `e2e/jornada.spec.ts`

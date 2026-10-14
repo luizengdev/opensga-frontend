@@ -17,6 +17,13 @@ const IDS = {
   matricula: "00000000-0000-4000-8000-0000000000n1",
   diario: "00000000-0000-4000-8000-0000000000i1",
   alunoUser: "00000000-0000-4000-8000-0000000000u1",
+  alunoPreUser: "00000000-0000-4000-8000-0000000000u3",
+  alunoPre: "00000000-0000-4000-8000-0000000000al2",
+  matriculaPre: "00000000-0000-4000-8000-0000000000n4",
+  responsavelUser: "00000000-0000-4000-8000-0000000000r1",
+  faturaPendente: "00000000-0000-4000-8000-0000000000f1",
+  faturaAtrasada: "00000000-0000-4000-8000-0000000000f2",
+  alunoId: "00000000-0000-4000-8000-0000000000al",
 };
 
 const json = (res, status, body) => {
@@ -49,14 +56,18 @@ const encodeJwt = (payload) => {
   return `${header}.${body}.e2e`;
 };
 
-const roleFromAuth = (req) => {
+const parseAuth = (req) => {
   const auth = req.headers.authorization ?? "";
   const token = auth.replace(/^Bearer\s+/i, "");
   try {
     const payload = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString("utf8"));
-    return payload.role ?? "ADMIN";
+    return {
+      role: payload.role ?? "ADMIN",
+      sub: payload.sub ?? null,
+      email: payload.email ?? null,
+    };
   } catch {
-    return "ADMIN";
+    return {role: "ADMIN", sub: null, email: null};
   }
 };
 
@@ -87,6 +98,24 @@ const alunoUser = {
   avatarUrl: null,
 };
 
+const alunoPreUser = {
+  id: IDS.alunoPreUser,
+  nome: "Aluno Pré E2E",
+  email: "pre@opensga.dev",
+  cpf: "555.555.555-55",
+  role: "ALUNO",
+  avatarUrl: null,
+};
+
+const responsavelUser = {
+  id: IDS.responsavelUser,
+  nome: "Responsável E2E",
+  email: "responsavel@opensga.dev",
+  cpf: "666.666.666-66",
+  role: "RESPONSAVEL",
+  avatarUrl: null,
+};
+
 const documentosCatalogo = [
   {
     id: "00000000-0000-4000-8000-0000000000doc1",
@@ -101,6 +130,13 @@ const documentosCatalogo = [
     titulo: "Carteirinha Estudantil",
     descricao: "Identidade acadêmica digital para meia-entrada e acesso campus.",
     finalidade: "Meia-entrada e identificação institucional",
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000000doc3",
+    tipo: "QUITACAO_FINANCEIRA",
+    titulo: "Quitação Financeira",
+    descricao: "Comprova ausência de débitos em aberto junto à instituição.",
+    finalidade: "Transferência e órgãos públicos",
   },
 ];
 
@@ -379,9 +415,63 @@ const seedMatriculas = () => [
     email: "fora@opensga.dev",
     cpf: "444.444.444-44",
   }),
+  createMatricula({
+    id: IDS.matriculaPre,
+    ra: "2026000098",
+    nome: alunoPreUser.nome,
+    email: alunoPreUser.email,
+    cpf: alunoPreUser.cpf,
+    status: "PRE_MATRICULADO",
+  }),
+];
+
+const seedFaturas = () => [
+  {
+    id: IDS.faturaPendente,
+    alunoId: IDS.alunoId,
+    descricao: "Mensalidade 2026.2",
+    valor: 899,
+    dataVencimento: "2026-11-10",
+    status: "PENDENTE",
+    stripeInvoiceId: null,
+    stripePaymentUrl: null,
+    pagoEm: null,
+    aluno: {
+      ra: "2026000001",
+      user: {id: alunoUser.id, nome: alunoUser.nome, email: alunoUser.email},
+    },
+  },
+  {
+    id: IDS.faturaAtrasada,
+    alunoId: IDS.alunoId,
+    descricao: "Mensalidade 2026.1",
+    valor: 899,
+    dataVencimento: "2026-03-10",
+    status: "ATRASADA",
+    stripeInvoiceId: null,
+    stripePaymentUrl: "https://checkout.stripe.com/c/pay/e2e_mock",
+    pagoEm: null,
+    aluno: {
+      ra: "2026000001",
+      user: {id: alunoUser.id, nome: alunoUser.nome, email: alunoUser.email},
+    },
+  },
+];
+
+const seedComunicados = () => [
+  {
+    id: "00000000-0000-4000-8000-0000000000cm1",
+    titulo: "Aviso E2E do período",
+    conteudo: "Comunicado de teste para o portal do aluno.",
+    publicoAlvo: ["ALUNO", "RESPONSAVEL"],
+    criadoEm: "2026-10-01T12:00:00.000Z",
+  },
 ];
 
 let matriculas = seedMatriculas();
+let faturas = seedFaturas();
+let comunicados = seedComunicados();
+let inscritos = [];
 let nextInscricaoRa = 100;
 
 let diarios = [
@@ -395,6 +485,9 @@ let diarios = [
 
 const resetState = () => {
   matriculas = seedMatriculas();
+  faturas = seedFaturas();
+  comunicados = seedComunicados();
+  inscritos = [];
   nextInscricaoRa = 100;
   diarios = [
     createDiario({
@@ -408,7 +501,7 @@ const resetState = () => {
 
 const diarioPrincipal = () => diarios.find((d) => d.id === IDS.diario) ?? diarios[0];
 
-const meForRole = (role) => {
+const meForRole = (role, sub = null) => {
   if (role === "PROFESSOR") {
     return {
       ...professorUser,
@@ -423,11 +516,47 @@ const meForRole = (role) => {
     };
   }
 
+  if (role === "RESPONSAVEL") {
+    return {
+      ...responsavelUser,
+      ativo: true,
+      aluno: null,
+      professor: null,
+      dependentes: [{id: IDS.alunoId, ra: "2026000001", nome: alunoUser.nome}],
+    };
+  }
+
   if (role === "ALUNO") {
+    if (sub === IDS.alunoPreUser) {
+      return {
+        ...alunoPreUser,
+        ativo: true,
+        aluno: {id: IDS.alunoPre, ra: "2026000098"},
+        professor: null,
+        dependentes: [],
+      };
+    }
+
+    const inscrito = inscritos.find((item) => item.userId === sub);
+    if (inscrito) {
+      return {
+        id: inscrito.userId,
+        nome: inscrito.nome,
+        email: inscrito.email,
+        cpf: inscrito.cpf,
+        role: "ALUNO",
+        avatarUrl: null,
+        ativo: true,
+        aluno: {id: inscrito.alunoId, ra: inscrito.ra},
+        professor: null,
+        dependentes: [],
+      };
+    }
+
     return {
       ...alunoUser,
       ativo: true,
-      aluno: {id: "00000000-0000-4000-8000-0000000000al", ra: "2026000001"},
+      aluno: {id: IDS.alunoId, ra: "2026000001"},
       professor: null,
       dependentes: [],
     };
@@ -454,7 +583,8 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://127.0.0.1:${PORT}`);
   const path = url.pathname;
   const method = req.method ?? "GET";
-  const role = roleFromAuth(req);
+  const authUser = parseAuth(req);
+  const role = authUser.role;
 
   if (method === "GET" && path === "/health") {
     return json(res, 200, {status: "ok"});
@@ -506,11 +636,76 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    if (
+      (identificador === "2026000098" || identificador === "pre@opensga.dev") &&
+      senha === "Aluno@123456"
+    ) {
+      return json(res, 200, {
+        token: encodeJwt({
+          sub: alunoPreUser.id,
+          role: "ALUNO",
+          email: alunoPreUser.email,
+          exp: Math.floor(Date.now() / 1000) + 30 * 60,
+        }),
+        user: alunoPreUser,
+      });
+    }
+
+    if (
+      (identificador === "responsavel@opensga.dev" || identificador === "666.666.666-66") &&
+      senha === "Responsavel@123456"
+    ) {
+      return json(res, 200, {
+        token: encodeJwt({
+          sub: responsavelUser.id,
+          role: "RESPONSAVEL",
+          email: responsavelUser.email,
+          exp: Math.floor(Date.now() / 1000) + 30 * 60,
+        }),
+        user: responsavelUser,
+      });
+    }
+
+    const inscrito = inscritos.find(
+      (item) =>
+        (item.ra === identificador || item.email === identificador) && item.senha === senha,
+    );
+    if (inscrito) {
+      const user = {
+        id: inscrito.userId,
+        nome: inscrito.nome,
+        email: inscrito.email,
+        cpf: inscrito.cpf,
+        role: "ALUNO",
+        avatarUrl: null,
+      };
+      return json(res, 200, {
+        token: encodeJwt({
+          sub: inscrito.userId,
+          role: "ALUNO",
+          email: inscrito.email,
+          exp: Math.floor(Date.now() / 1000) + 30 * 60,
+        }),
+        user,
+      });
+    }
+
     return json(res, 401, {error: "Credenciais inválidas"});
   }
 
   if (method === "GET" && path === "/api/v1/auth/me") {
-    return json(res, 200, meForRole(role));
+    return json(res, 200, meForRole(role, authUser.sub));
+  }
+
+  if (method === "PATCH" && path === "/api/v1/auth/senha") {
+    const body = await readBody(req);
+    if (!body.senhaAtual || !body.senhaNova || String(body.senhaNova).length < 8) {
+      return json(res, 400, {error: "Senha inválida"});
+    }
+    if (body.senhaAtual !== "Aluno@123456" && body.senhaAtual !== "Admin@123456") {
+      return json(res, 400, {error: "Senha atual incorreta"});
+    }
+    return json(res, 200, {ok: true});
   }
 
   if (method === "GET" && path === "/api/v1/parametrizacoes") {
@@ -684,9 +879,41 @@ const server = http.createServer(async (req, res) => {
       return json(res, 404, {error: "Curso não encontrado"});
     }
 
+    const knownByCpf = [alunoUser, alunoPreUser, ...inscritos.map((item) => ({
+      cpf: item.cpf,
+      email: item.email,
+    }))].find((person) => person.cpf === cpf);
+    const knownByEmail = [alunoUser, alunoPreUser, ...inscritos.map((item) => ({
+      cpf: item.cpf,
+      email: item.email,
+    }))].find((person) => person.email === email);
+
+    if (knownByCpf && knownByEmail && knownByCpf.email !== knownByEmail.email) {
+      return json(res, 400, {error: "CPF e e-mail pertencem a pessoas diferentes"});
+    }
+    if (knownByCpf && knownByCpf.email !== email) {
+      return json(res, 400, {error: "CPF e e-mail pertencem a pessoas diferentes"});
+    }
+    if (knownByEmail && knownByEmail.cpf !== cpf) {
+      return json(res, 400, {error: "CPF e e-mail pertencem a pessoas diferentes"});
+    }
+
+    const requiresCheckout = String(email).endsWith("@checkout.e2e.dev");
+    if (requiresCheckout) {
+      return json(res, 200, {
+        url: "https://checkout.stripe.com/c/pay/e2e_mock_inscricao",
+        sessionId: "cs_test_e2e_mock",
+        requiresCheckout: true,
+        status: "AGUARDANDO_PAGAMENTO",
+        acesso: null,
+      });
+    }
+
     const raSuffix = String(nextInscricaoRa).padStart(6, "0");
     const ra = `2026${raSuffix}`;
     const matriculaId = `00000000-0000-4000-8000-00000000n${raSuffix.slice(-2)}`;
+    const userId = `00000000-0000-4000-8000-00000000u${raSuffix.slice(-2)}`;
+    const alunoId = `00000000-0000-4000-8000-00000000a${raSuffix.slice(-2)}`;
     nextInscricaoRa += 1;
     const senhaProvisoria = "Aluno@123456";
 
@@ -700,6 +927,10 @@ const server = http.createServer(async (req, res) => {
         cpf,
         status: "PRE_MATRICULADO",
       }),
+    ];
+    inscritos = [
+      ...inscritos,
+      {ra, email, cpf, nome, senha: senhaProvisoria, userId, alunoId, matriculaId},
     ];
 
     return json(res, 200, {
@@ -870,11 +1101,50 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (method === "GET" && path === "/api/v1/financeiro/faturas") {
-    return json(res, 200, []);
+    if (role === "PROFESSOR") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+    return json(res, 200, faturas);
+  }
+
+  if (method === "PATCH" && path.startsWith("/api/v1/financeiro/faturas/") && path.endsWith("/status")) {
+    if (role !== "ADMIN") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+    const id = path.split("/")[5];
+    const body = await readBody(req);
+    const fatura = faturas.find((item) => item.id === id);
+    if (!fatura) {
+      return json(res, 404, {error: "Fatura não encontrada"});
+    }
+    fatura.status = body.status;
+    fatura.pagoEm = body.status === "PAGA" ? "2026-10-14T12:00:00.000Z" : null;
+    return json(res, 200, fatura);
+  }
+
+  if (method === "PATCH" && path.startsWith("/api/v1/matriculas/") && path.endsWith("/status")) {
+    if (role !== "ADMIN") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+    const id = path.split("/")[4];
+    const body = await readBody(req);
+    const matricula = matriculas.find((item) => item.id === id);
+    if (!matricula) {
+      return json(res, 404, {error: "Matrícula não encontrada"});
+    }
+    matricula.status = body.status;
+    return json(res, 200, matricula);
+  }
+
+  if (method === "GET" && path === "/api/v1/documentos/modelos") {
+    if (role !== "ADMIN") {
+      return json(res, 403, {error: "Forbidden"});
+    }
+    return json(res, 200, documentosCatalogo);
   }
 
   if (method === "GET" && path === "/api/v1/comunicados") {
-    return json(res, 200, []);
+    return json(res, 200, comunicados);
   }
 
   if (method === "GET" && path === "/api/v1/portal/contexto") {
@@ -882,14 +1152,39 @@ const server = http.createServer(async (req, res) => {
       return json(res, 403, {error: "Forbidden"});
     }
 
+    const alunoIdQuery = url.searchParams.get("alunoId");
+    if (role === "RESPONSAVEL" && alunoIdQuery && alunoIdQuery !== IDS.alunoId) {
+      return json(res, 403, {error: "Forbidden"});
+    }
+
     const d = diarioPrincipal();
+    const isPre = authUser.sub === IDS.alunoPreUser;
+    const inscrito = inscritos.find((item) => item.userId === authUser.sub);
+    const matriculaStatus = isPre || inscrito ? "PRE_MATRICULADO" : "ATIVO";
+    const ra = isPre ? "2026000098" : inscrito?.ra ?? "2026000001";
+    const matriculaId = isPre ? IDS.matriculaPre : inscrito?.matriculaId ?? IDS.matricula;
+    const alunoId = isPre ? IDS.alunoPre : inscrito?.alunoId ?? IDS.alunoId;
+    const profile = meForRole(role === "RESPONSAVEL" ? "RESPONSAVEL" : "ALUNO", authUser.sub);
+    const portalFaturas =
+      ra === "2026000001"
+        ? faturas.map((fatura) => ({
+            id: fatura.id,
+            descricao: fatura.descricao,
+            valor: fatura.valor,
+            dataVencimento: fatura.dataVencimento,
+            status: fatura.status,
+            stripePaymentUrl: fatura.stripePaymentUrl,
+            pagoEm: fatura.pagoEm,
+          }))
+        : [];
+
     return json(res, 200, {
-      profile: meForRole("ALUNO"),
-      alunoId: "00000000-0000-4000-8000-0000000000al",
+      profile,
+      alunoId,
       matricula: {
-        id: IDS.matricula,
-        ra: "2026000001",
-        status: "ATIVO",
+        id: matriculaId,
+        ra,
+        status: matriculaStatus,
         periodoAtual: 1,
         semestreIngresso: "2026.1",
         curso: {
@@ -903,37 +1198,40 @@ const server = http.createServer(async (req, res) => {
           nome: "Matriz 2026.1 Conforme",
           anoVigencia: 2026,
           chTotalCurso: 140,
-          chIntegralizada: d.chCumprida,
+          chIntegralizada: isPre || inscrito ? 0 : d.chCumprida,
         },
       },
-      disciplinas: [
-        {
-          id: d.id,
-          codigoTurma: turmaProfessor.codigo,
-          codigoDisciplina: disciplina.codigo,
-          nomeDisciplina: disciplina.nome,
-          professorNome: professorUser.nome,
-          horario: turmaProfessor.horario,
-          salaOuLink: turmaProfessor.salaOuLink,
-          tipoEntrega: "PRESENCIAL_FISICO",
-          anoLetivo: 2026,
-          semestreLetivo: 2,
-          chTotal: 60,
-          chCumprida: d.chCumprida,
-          totalFaltas: d.totalFaltas,
-          notaAv: d.notaAv,
-          notaAvs: d.notaAvs,
-          notaAv3: d.notaAv3,
-          notaSemestral: d.notaSemestral,
-          mediaFinal: d.mediaFinal,
-          habilitaAv3: d.habilitaAv3,
-          statusDisciplina: d.statusDisciplina,
-          semestreFechado: d.semestreFechado,
-        },
-      ],
+      disciplinas:
+        isPre || inscrito
+          ? []
+          : [
+              {
+                id: d.id,
+                codigoTurma: turmaProfessor.codigo,
+                codigoDisciplina: disciplina.codigo,
+                nomeDisciplina: disciplina.nome,
+                professorNome: professorUser.nome,
+                horario: turmaProfessor.horario,
+                salaOuLink: turmaProfessor.salaOuLink,
+                tipoEntrega: "PRESENCIAL_FISICO",
+                anoLetivo: 2026,
+                semestreLetivo: 2,
+                chTotal: 60,
+                chCumprida: d.chCumprida,
+                totalFaltas: d.totalFaltas,
+                notaAv: d.notaAv,
+                notaAvs: d.notaAvs,
+                notaAv3: d.notaAv3,
+                notaSemestral: d.notaSemestral,
+                mediaFinal: d.mediaFinal,
+                habilitaAv3: d.habilitaAv3,
+                statusDisciplina: d.statusDisciplina,
+                semestreFechado: d.semestreFechado,
+              },
+            ],
       matriz: [],
-      faturas: [],
-      comunicados: [],
+      faturas: portalFaturas,
+      comunicados: comunicados.filter((item) => item.publicoAlvo.includes("ALUNO")),
       ouvidoria: [],
     });
   }
@@ -955,6 +1253,26 @@ const server = http.createServer(async (req, res) => {
     const modelo = documentosCatalogo.find((item) => item.tipo === body.tipo);
     if (!modelo) {
       return json(res, 404, {error: "Modelo de documento não encontrado"});
+    }
+
+    const isPre = authUser.sub === IDS.alunoPreUser;
+    const inscrito = inscritos.find((item) => item.userId === authUser.sub);
+    const matriculaStatus = isPre || inscrito ? "PRE_MATRICULADO" : "ATIVO";
+
+    if (
+      (body.tipo === "DECLARACAO_MATRICULA" || body.tipo === "CARTEIRINHA_ESTUDANTIL") &&
+      matriculaStatus !== "ATIVO"
+    ) {
+      return json(res, 400, {error: "Declaração exige matrícula ativa"});
+    }
+
+    if (body.tipo === "QUITACAO_FINANCEIRA") {
+      const temAtrasada = faturas.some(
+        (fatura) => fatura.status === "ATRASADA" && fatura.aluno.ra === "2026000001",
+      );
+      if (temAtrasada && !isPre && !inscrito) {
+        return json(res, 409, {error: "Quitação bloqueada por fatura atrasada"});
+      }
     }
 
     const d = diarioPrincipal();

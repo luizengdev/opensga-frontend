@@ -14,7 +14,9 @@ export const annotate = (
 ) => {
   const severity = labels.severity ?? "critical";
   const qaId = testInfo.title.match(/QA-[A-Z0-9-]+/)?.[0];
-  const tags = ["p0", ...(qaId ? [qaId] : []), ...(labels.tags ?? [])];
+  const priority =
+    testInfo.titlePath.join(" ").match(/@p([0-2])\b/)?.[0]?.replace("@", "") ?? "p0";
+  const tags = [priority, ...(qaId ? [qaId] : []), ...(labels.tags ?? [])];
 
   allure.epic(labels.epic);
   allure.feature(labels.feature);

@@ -149,9 +149,9 @@ Na secretaria, **Matrículas & RA** agrupa Alterar Situação e Consulta Acadêm
 
 ## Testes E2E (Playwright)
 
-A suíte em `e2e/` cobre os cenários **P0** do [documento de QA](https://github.com/luizengdev/opensga-api/blob/develop/docs/qa-arquitetura-testes.md) (IDs `QA-*`): login unificado, RBAC do professor, dashboards, turmas/diário, lançamento AV/AVS/AV3, fechamento, enturmação, auditoria MEC, jornada ponta a ponta, portal do aluno (`QA-PORTAL-*` / emissão de documentos) e inscrição pública isenta (`QA-FIN-INS-01`) com prova de matrícula `PRE_MATRICULADO` na secretaria.
+Guia da suíte: [`docs/e2e.md`](./docs/e2e.md). Regras de negócio e IDs `QA-*`: [documento de QA na API](https://github.com/luizengdev/opensga-api/blob/develop/docs/qa-arquitetura-testes.md).
 
-Os testes sobem um **mock HTTP** da API (`e2e/mocks/mock-api-server.mjs` na porta `3334`) e o Next em `http://localhost:3000` — não dependem da API real nem do Postgres. Locators semânticos (role/texto), Page Objects em `e2e/pages/`, fixtures em `e2e/fixtures/`, reporter **Allure** e workflow GitHub Actions com sharding.
+A suíte em `e2e/` cobre **P0** e **P1** (login, RBAC, dashboards, turmas/diário, AV/AVS/AV3, fechamento, enturmação, MEC, jornada, portal/documentos, inscrição pública, secretaria). Sobe **mock HTTP** (`e2e/mocks/mock-api-server.mjs` na porta `3334`) e o Next em `http://localhost:3000` — sem API real nem Postgres. Locators semânticos, Page Objects, fixtures, Allure e CI com sharding.
 
 ### Rodar localmente
 
